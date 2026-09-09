@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Wallet Recovery Console — 36 EVM ağında unutulmuş likidite, mevduat, kilit ve alınmamış köprü transferlerini bulur; çekilebilenleri tek tıkla çektirir. Sunucusuz, anahtarsız, açık kaynak.">
+<meta name="theme-color" content="#0b0e14">
+<title>Wallet Recovery Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b0e14; --bg-2: #0f131b; --surface: #121722; --raised: #182030; --line: #232b3a; --line-2: #2d3748;
+    --text: #e7ecf3; --muted: #8c97a8; --faint: #5f6b7d;
+    --gold: #e4b04a; --gold-2: #f2c76a; --gold-ink: #1b1403;
+    --ok: #3ddc97; --warn: #f5b950; --bad: #f26d6d; --info: #6ea8fe;
+    --radius: 14px;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: radial-gradient(1200px 600px at 20% -10%, #17203a 0%, transparent 60%), radial-gradient(900px 500px at 100% 0%, #1a1a2a 0%, transparent 55%), var(--bg); color: var(--text); font: 15px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+  a { color: var(--info); text-decoration: none; } a:hover { text-decoration: underline; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 22px 72px; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 6px 0 22px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .mark { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--gold) 0%, #b9862c 100%); color: var(--gold-ink); display: grid; place-items: center; font-weight: 700; font-size: 13px; letter-spacing: .04em; box-shadow: 0 6px 20px rgba(228,176,74,.25); }
+  .brand h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: -.01em; }
+  .brand small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; margin-top: 1px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+  .seg button { border: 0; background: transparent; color: var(--muted); padding: 5px 12px; border-radius: 999px; font: 600 12px var(--font); cursor: pointer; }
+  .seg button.on { background: var(--raised); color: var(--text); }
+  .hero { background: linear-gradient(180deg, rgba(24,32,48,.9), rgba(18,23,34,.9)); border: 1px solid var(--line); border-radius: 18px; padding: 26px 26px 20px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+  .hero h2 { margin: 0 0 6px; font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+  .hero p { margin: 0 0 18px; color: var(--muted); max-width: 760px; }
+  .addr-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+  .addr-wrap { flex: 1 1 420px; position: relative; display: flex; align-items: center; }
+  .addr-wrap input { width: 100%; height: 48px; padding: 0 14px 0 50px; border-radius: 12px; border: 1px solid var(--line-2); background: #0b0f17; color: var(--text); font: 500 14px var(--mono); letter-spacing: .01em; outline: none; transition: border-color .15s, box-shadow .15s; }
+  .addr-wrap input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(228,176,74,.18); }
+  .addr-wrap .ident { position: absolute; left: 12px; width: 26px; height: 26px; border-radius: 7px; overflow: hidden; background: var(--raised); }
+  .btn { height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid transparent; font: 600 14px var(--font); cursor: pointer; transition: transform .08s, filter .15s, background .15s; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: linear-gradient(135deg, var(--gold-2), var(--gold)); color: var(--gold-ink); box-shadow: 0 8px 24px rgba(228,176,74,.22); }
+  .btn.primary:hover { filter: brightness(1.05); }
+  .btn.ghost { background: var(--surface); color: var(--text); border-color: var(--line-2); }
+  .btn.ghost:hover { background: var(--raised); }
+  .btn.sm { height: 34px; padding: 0 12px; border-radius: 9px; font-size: 13px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; transform: none; }
+  .hero .meta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 12px; color: var(--muted); font-size: 13px; }
+  .hero details { margin-top: 12px; }
+  .hero summary { cursor: pointer; color: var(--muted); font-size: 13px; list-style: none; }
+  .hero summary::-webkit-details-marker { display: none; }
+  .keyrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .keyrow input { height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line-2); background: #0b0f17; color: var(--text); font: 500 13px var(--mono); flex: 1 1 320px; outline: none; }
+  .keyrow input:focus { border-color: var(--gold); }
+  .keyrow .hint { color: var(--faint); font-size: 12px; flex-basis: 100%; }
+  .progress { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 16px; }
+  .progress > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--gold-2)); transition: width .5s ease; }
+  .status { margin-top: 8px; font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; min-height: 20px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); display: inline-block; }
+  .dot.live { background: var(--gold); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(228,176,74,.5);} 100% { box-shadow: 0 0 0 8px rgba(228,176,74,0);} }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0 22px; }
+  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .kpi .l { color: var(--muted); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
+  .kpi .v { font: 600 26px/1.15 var(--font); letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .kpi .s { color: var(--faint); font-size: 12px; margin-top: 4px; }
+  .kpi.gold .v { color: var(--gold-2); }
+  section.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; }
+  section.card > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  section.card > header h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: .01em; display: flex; align-items: center; gap: 10px; }
+  .count { background: var(--raised); color: var(--muted); border: 1px solid var(--line-2); border-radius: 999px; padding: 1px 9px; font: 600 12px var(--font); }
+  section.card > header .sub { color: var(--faint); font-size: 12px; text-align: right; }
+  .wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; padding: 10px 18px; border-bottom: 1px solid var(--line); background: var(--bg-2); white-space: nowrap; }
+  td { padding: 12px 18px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: rgba(255,255,255,.02); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chain { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; white-space: nowrap; }
+  .chain i { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+  .empty { padding: 26px 18px; color: var(--faint); text-align: center; font-size: 13.5px; }
+  .note { color: var(--muted); font-size: 12.5px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+  .pill.warn { background: rgba(245,185,80,.14); color: var(--warn); }
+  .ext { color: var(--faint); margin-left: 6px; font-size: 12px; }
+  .skel td { padding: 14px 18px; } .skel span { display: block; height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--line) 25%, var(--raised) 50%, var(--line) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; padding: 14px 18px; }
+  .cell { display: flex; align-items: center; gap: 9px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); font-size: 12.5px; }
+  .cell b { font-weight: 600; } .cell .src { color: var(--faint); font-size: 11.5px; margin-left: auto; white-space: nowrap; } .cell i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .lvl-full i { background: var(--ok); } .lvl-partial i { background: var(--warn); } .lvl-native i { background: var(--faint); } .lvl-error i { background: var(--bad); } .lvl-pending i { background: var(--line-2); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 0 18px 14px; color: var(--muted); font-size: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; } .legend i { width: 9px; height: 9px; border-radius: 50%; }
+  #log { font: 12.5px/1.6 var(--mono); padding: 12px 18px; max-height: 260px; overflow: auto; color: var(--muted); }
+  #log .ok { color: var(--ok); } #log .bad { color: var(--bad); } #log .warn { color: var(--warn); }
+  footer { color: var(--faint); font-size: 12px; margin-top: 26px; line-height: 1.7; } footer b { color: var(--muted); font-weight: 500; }
+  @media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); } .hero { padding: 20px 16px 16px; } .hero h2 { font-size: 22px; } th, td { padding-left: 12px; padding-right: 12px; } section.card > header .sub { display: none; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="brand"><div class="mark">WRC</div><div><h1>Wallet Recovery Console</h1><small data-i18n="tagline">Sunucusuz · anahtarsız · açık kaynak</small></div></div>
+    <div class="seg"><button id="langTr" class="on">TR</button><button id="langEn">EN</button></div>
+  </div>
+
+  <div class="hero">
+    <h2 data-i18n="hero_title">Ağlarda unuttuğun varlıkları bul, tek tıkla geri al.</h2>
+    <p data-i18n="hero_text">36 EVM ağı taranır: likidite pozisyonları, mevduatlar, kilitler, vesting'ler, alınmamış köprü transferleri. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.</p>
+    <div class="addr-row">
+      <div class="addr-wrap"><div class="ident" id="ident"></div><input id="addr" placeholder="0x…" spellcheck="false" autocomplete="off"></div>
+      <button id="btnScan" class="btn primary" data-i18n="btn_scan">Tara</button>
+      <button id="btnStop" class="btn ghost" disabled data-i18n="btn_stop">Durdur</button>
+      <button id="btnConnect" class="btn ghost" data-i18n="btn_connect">Cüzdanı bağla</button>
+    </div>
+    <div class="meta">
+      <select id="walletSel" class="btn ghost sm" style="display:none"></select>
+      <span id="walletInfo" data-i18n="wallet_none">cüzdan bağlı değil</span>
+    </div>
+    <details id="keyBox">
+      <summary data-i18n="key_summary">İsteğe bağlı: Etherscan API anahtarı (ücretsiz) — BNB Chain, opBNB, HyperEVM, Taiko ve Sei için token dizini açar</summary>
+      <div class="keyrow">
+        <input id="ethKey" placeholder="Etherscan API key" spellcheck="false" autocomplete="off">
+        <button id="btnKeySave" class="btn ghost sm" data-i18n="btn_key_save">Kaydet</button>
+        <a href="https://etherscan.io/apis" target="_blank" rel="noopener" data-i18n="key_link">Ücretsiz anahtar al ↗</a>
+        <span class="hint" data-i18n="key_hint">Anahtar yalnız bu tarayıcıda (localStorage) tutulur ve doğrudan Etherscan API'sine gider; başka hiçbir yere gönderilmez.</span>
+      </div>
+    </details>
+    <div class="progress"><div id="barFill"></div></div>
+    <div class="status"><span id="statusDot" class="dot"></span><span id="scanStatus" data-i18n="status_idle">Adres gir ve taramayı başlat.</span></div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi gold"><div class="l" data-i18n="kpi_ready">Şimdi çekilebilir</div><div class="v" id="kpiReady">—</div><div class="s" id="kpiReadyS"></div></div>
+    <div class="kpi"><div class="l" data-i18n="kpi_wait">Bekleyen</div><div class="v" id="kpiWait">—</div><div class="s" id="kpiWaitS"></div></div>
+    <div class="kpi"><div class="l" data-i18n="kpi_native">Yerli coin bakiyesi</div><div class="v" id="kpiNative">—</div><div class="s" id="kpiNativeS"></div></div>
+    <div class="kpi"><div class="l" data-i18n="kpi_cov">Kapsam</div><div class="v" id="kpiCov">—</div><div class="s" id="kpiCovS"></div></div>
+  </div>
+
+  <section class="card"><header><h3><span data-i18n="h_ready">Çekilebilir</span> <span class="count" id="cntReady">0</span></h3><span class="sub" data-i18n="h_ready_sub">Tek tıkla; önce simüle edilir, sonra her işlemi cüzdanında onaylarsın</span></header>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_note">Açıklama</th><th></th></tr></thead><tbody id="readyBody"></tbody></table><div id="readyEmpty" class="empty">—</div></div></section>
+
+  <section class="card"><header><h3><span data-i18n="h_wait">Bekleyen</span> <span class="count" id="cntWait">0</span></h3><span class="sub" data-i18n="h_wait_sub">Kilit ya da vesting süresi dolunca çekilebilir</span></header>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_when">Açılış</th><th></th></tr></thead><tbody id="waitBody"></tbody></table><div id="waitEmpty" class="empty">—</div></div></section>
+
+  <section class="card"><header><h3><span data-i18n="h_info">Elle işlem</span> <span class="count" id="cntInfo">0</span></h3><span class="sub" data-i18n="h_info_sub">Protokole özgü akış gerektirir; bağlantı doğrudan protokol arayüzüne gider</span></header>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_note">Açıklama</th></tr></thead><tbody id="infoBody"></tbody></table><div id="infoEmpty" class="empty">—</div></div></section>
+
+  <section class="card"><header><h3><span data-i18n="h_tokens">Tokenlar</span> <span class="count" id="cntTokens">0</span></h3><span class="sub" data-i18n="h_tokens_sub">Cüzdanda duran, doğrudan takas edilebilir bakiyeler (≥ $1)</span></header>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th></tr></thead><tbody id="tokensBody"></tbody></table><div id="tokensEmpty" class="empty">—</div></div></section>
+
+  <section class="card"><header><h3><span data-i18n="h_native">Yerli coinler</span> <span class="count" id="cntNative">0</span></h3><span class="sub" id="nativeTotal"></span></header>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th class="num" data-i18n="th_balance">Bakiye</th><th class="num">≈ USD</th><th class="num" data-i18n="th_txs">İşlem</th></tr></thead><tbody id="nativeBody"></tbody></table><div id="nativeEmpty" class="empty">—</div></div></section>
+
+  <section class="card"><header><h3><span data-i18n="h_cov">Kapsam matrisi</span> <span class="count" id="cntCov">36</span></h3><span class="sub" data-i18n="h_cov_sub">Her ağ için kullanılan veri kaynağı ve kapsam düzeyi</span></header>
+    <div class="matrix" id="matrix"></div>
+    <div class="legend"><span><i style="background:var(--ok)"></i><span data-i18n="lg_full">Tam: token ve NFT dizini okundu</span></span><span><i style="background:var(--warn)"></i><span data-i18n="lg_partial">Kısmi: sınırlı blok aralığı</span></span><span><i style="background:var(--faint)"></i><span data-i18n="lg_native">Yalnız yerli bakiye</span></span><span><i style="background:var(--bad)"></i><span data-i18n="lg_error">Kaynak cevap vermedi</span></span></div></section>
+
+  <section class="card"><header><h3 data-i18n="h_log">Etkinlik</h3></header><div id="log"></div></section>
+
+  <footer>
+    <b data-i18n="foot_a">Güvenlik.</b> <span data-i18n="foot1">Sayfa gizli anahtar, seed ya da imza istemez; yalnız imzasız işlem (to / data / value) hazırlar ve cüzdan uzantın gösterir. Her işlem gönderilmeden önce cüzdan adına simüle edilir; geri dönecek işlem gönderilmez. Tüm istekler doğrudan herkese açık RPC, Blockscout, Routescan, BTRScan, Etherscan, CoinGecko ve Wormholescan uçlarına gider.</span><br>
+    <b data-i18n="foot_b">Sorumluluk.</b> <span data-i18n="foot2">Yatırım tavsiyesi değildir. Miktarlar simülasyon ve zincir okumasıdır; işlem anında değişebilir, gaz ücretleri size aittir.</span><br>
+    <span data-i18n="foot3">Açık kaynak · MIT ·</span> <a href="https://github.com/Bornoz/wallet-recovery-console" target="_blank" rel="noopener">github.com/Bornoz/wallet-recovery-console</a> · <a href="https://twitter.com/kansizsavar" target="_blank" rel="noopener">@kansizsavar</a>
+  </footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================ i18n
+  var I18N = {
+    tr: {
+      tagline: 'Sunucusuz · anahtarsız · açık kaynak',
+      hero_title: 'Ağlarda unuttuğun varlıkları bul, tek tıkla geri al.',
+      hero_text: '36 EVM ağı taranır: likidite pozisyonları, mevduatlar, kilitler, vesting’ler, alınmamış köprü transferleri. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.',
+      btn_scan: 'Tara', btn_stop: 'Durdur', btn_connect: 'Cüzdanı bağla', wallet_none: 'cüzdan bağlı değil', status_idle: 'Adres gir ve taramayı başlat.',
+      key_summary: 'İsteğe bağlı: Etherscan API anahtarı (ücretsiz) — BNB Chain, opBNB, HyperEVM, Taiko ve Sei için token dizini açar', btn_key_save: 'Kaydet', key_link: 'Ücretsiz anahtar al ↗', key_hint: 'Anahtar yalnız bu tarayıcıda (localStorage) tutulur ve doğrudan Etherscan API’sine gider; başka hiçbir yere gönderilmez.',
+      kpi_ready: 'Şimdi çekilebilir', kpi_wait: 'Bekleyen', kpi_native: 'Yerli coin bakiyesi', kpi_cov: 'Kapsam',
+      h_ready: 'Çekilebilir', h_ready_sub: 'Tek tıkla; önce simüle edilir, sonra her işlemi cüzdanında onaylarsın', h_wait: 'Bekleyen', h_wait_sub: 'Kilit ya da vesting süresi dolunca çekilebilir', h_info: 'Elle işlem', h_info_sub: 'Protokole özgü akış gerektirir; bağlantı doğrudan protokol arayüzüne gider', h_tokens: 'Tokenlar', h_tokens_sub: 'Cüzdanda duran, doğrudan takas edilebilir bakiyeler (≥ $1)', h_native: 'Yerli coinler', h_cov: 'Kapsam matrisi', h_cov_sub: 'Her ağ için kullanılan veri kaynağı ve kapsam düzeyi', h_log: 'Etkinlik',
+      th_chain: 'Ağ', th_what: 'Varlık', th_amount: 'Miktar', th_note: 'Açıklama', th_when: 'Açılış', th_balance: 'Bakiye', th_txs: 'İşlem',
+      lg_full: 'Tam: token ve NFT dizini okundu', lg_partial: 'Kısmi: sınırlı blok aralığı', lg_native: 'Yalnız yerli bakiye', lg_error: 'Kaynak cevap vermedi',
+      foot_a: 'Güvenlik.', foot1: 'Sayfa gizli anahtar, seed ya da imza istemez; yalnız imzasız işlem (to / data / value) hazırlar ve cüzdan uzantın gösterir. Her işlem gönderilmeden önce cüzdan adına simüle edilir; geri dönecek işlem gönderilmez. Tüm istekler doğrudan herkese açık RPC, Blockscout, Routescan, BTRScan, Etherscan, CoinGecko ve Wormholescan uçlarına gider.', foot_b: 'Sorumluluk.', foot2: 'Yatırım tavsiyesi değildir. Miktarlar simülasyon ve zincir okumasıdır; işlem anında değişebilir, gaz ücretleri size aittir.', foot3: 'Açık kaynak · MIT ·',
+      bad_addr: 'Geçersiz adres: 0x ile başlayan 40 haneli hex bekleniyor.', scanning: 'Taranıyor', chains: 'ağ', done: 'Tarama tamamlandı', findings: 'bulgu', stopped: 'Tarama durduruldu', none_ready: 'Şu an tek tıkla çekilebilir bir varlık bulunmadı.', none_wait: 'Bekleyen kilit ya da vesting yok.', none_info: 'Elle işlem gerektiren varlık yok.', none_tokens: 'Bakiye yok.', none_native: 'Bakiye yok.', pending: 'Tarama bitince dolacak.',
+      items: 'kalem', full_cov: 'tam kapsam', key_saved: 'Etherscan anahtarı kaydedildi', key_cleared: 'Etherscan anahtarı silindi',
+      btn_withdraw: 'Çek', btn_unlock: 'Kilidi aç', btn_claim: 'Al', btn_vest: 'Vesting başlat', proto_link: 'protokol arayüzü', after: 'sonrası', total_native: 'toplam', no_wallet: 'EVM cüzdanı (MetaMask, Rabby vb.) bulunamadı.', connected: 'Cüzdan bağlandı', wrong_wallet: 'Bağlı cüzdan taranan adres değil; işlem gönderilmedi.', different: '· taranan adresten farklı', scanned_addr: '· taranan adres',
+      switched: 'ağına geçildi', step: 'Adım', approve: 'cüzdanında onayla', sent: 'Gönderildi', no_receipt: '4 dakika içinde makbuz gelmedi; explorer bağlantısından kontrol edip yeniden tara.', reverted: 'İşlem zincirde geri döndü; sonraki adım iptal edildi.', confirmed: 'Onaylandı, blok', rescan: 'Tamamlandı. 10 saniye sonra yeniden taranıyor.', rejected: 'İmza reddedildi; hiçbir şey gönderilmedi.', err: 'Hata',
+      src_blockscout: 'Blockscout', src_routescan: 'Routescan', src_btrscan: 'BTRScan', src_etherscan: 'Etherscan', src_logs: 'Zincir logları', src_logs_window: 'Zincir logları (son {n} blok)', src_none: 'Yerli bakiye', src_error: 'Cevap yok',
+      cov_full: 'Token ve NFT dizini {src} üzerinden okundu.', cov_partial: 'Yalnız son {n} blok tarandı; daha eskiler için Etherscan anahtarı gerekir.', cov_native_key: 'Token dizini için ücretsiz Etherscan API anahtarı gerekir (yukarıdaki alan).', cov_native_none: 'Bu ağ için herkese açık token dizini bulunmuyor; yalnız yerli bakiye ve bilinen pozisyon yöneticileri okundu.', cov_error: 'Veri kaynağı yanıt vermedi; yeniden tarayın.',
+      note_pos: 'Cüzdan adına decreaseLiquidity + collect simüle edildi.', note_pos_fail: 'Çekim simülasyonu başarısız', note_lp: 'Havuz payı', note_lp_two: 'Çekim iki işlemdir: LP çifte gönderilir, ardından burn çağrılır.', note_lp_router: 'Router üzerinden çekilir: onay + removeLiquidity, alt sınır %98.', note_lp_unpriced: 'Fiyat bilgisi yok.', note_lp_big: 'Değerli pozisyon ve bu çiftin router’ı tanınmıyor: iki ayrı işlem MEV riski taşır; protokol arayüzünden tek işlemde çekin.', note_lp_noabi: 'LP tokenının çift arayüzü yok; protokol arayüzünden çekilir.',
+      note_escrow: 'Kilit/escrow tokenı: vesting ya da kilit süresi protokol arayüzünde çözülür.', note_token: 'Standart token; cüzdanda görünür.', note_aave: 'withdraw(asset, max, owner). Açık borç varsa kısmen çekilir.', note_ctoken: 'redeem(balance). Havuz likiditesi yoksa geri döner.', note_bitlayer: 'claimDelayedRedeems(). Süre dolmadan çağrı geri döner; kayıp olmaz.', lbl_bitlayer: 'Bedrock uniBTC gecikmeli geri alım → BTC', lbl_aave: 'Aave-tipi mevduat', lbl_ctoken: 'Compound-tipi mevduat', lbl_pos: 'Konsantre likidite pozisyonu', lbl_lp: 'likiditesi',
+      lbl_velock: 'oy kilidi (ve-NFT)', note_velock_ready: 'Kilit süresi doldu; withdraw(tokenId) ile kilitli miktar cüzdana döner.', note_velock_wait: 'Kilit süresi dolmadı; süre bitince “Kilidi aç” açılır.', lbl_xtoken_pending: 'vesting', note_xtoken_ready: 'Vesting bitti; finalizeRedeem ile alınır.', note_xtoken_wait: 'Vesting sürüyor.', note_xtoken_start: 'Vesting başlatır: {days} gün sonra alınır; en kısa süre en düşük dönüşüm oranını verir. Daha yüksek oran için protokol arayüzünde daha uzun süre seçin.', lbl_glp: 'GMX GLP (stake)', note_glp: 'unstakeAndRedeemGlp: GLP çözülür ve wrapped yerli coine çevrilir.',
+      note_blocked: 'Çekim şu an mümkün değil, simülasyon geri döndü: {reason}. Protokol rezervi durdurmuş ya da dondurmuş olabilir; açılınca yeniden tarayın.', preflight_fail: 'Gönderilmedi: ön simülasyon geri döndü ({reason}). Gaz harcanmadı.',
+      wh_transfer: 'hedef zincirde alınmamış', wh_msg: 'Wormhole mesajı hedefte tamamlanmamış görünüyor', wh_note: 'Portal Bridge “Redeem” ile hedef cüzdandan alınır.', wh_note2: 'Takas ya da mesaj olabilir; tutar bilinmiyor, bağlantıdan inceleyin.'
+    },
+    en: {
+      tagline: 'Serverless · keyless · open source',
+      hero_title: 'Find what your wallet left behind. Recover it in one click.',
+      hero_text: 'Scans 36 EVM chains for liquidity positions, deposits, locks, vestings and unredeemed bridge transfers. Amounts are on-chain simulations made on behalf of the wallet, not estimates. No keys are ever requested; only your own wallet signs.',
+      btn_scan: 'Scan', btn_stop: 'Stop', btn_connect: 'Connect wallet', wallet_none: 'no wallet connected', status_idle: 'Enter an address and start the scan.',
+      key_summary: 'Optional: Etherscan API key (free) — unlocks token indexes for BNB Chain, opBNB, HyperEVM, Taiko and Sei', btn_key_save: 'Save', key_link: 'Get a free key ↗', key_hint: 'The key stays in this browser (localStorage) and is sent only to the Etherscan API; nothing else receives it.',
+      kpi_ready: 'Withdrawable now', kpi_wait: 'Waiting', kpi_native: 'Native balances', kpi_cov: 'Coverage',
+      h_ready: 'Withdrawable', h_ready_sub: 'One click; simulated first, then you approve each transaction in your wallet', h_wait: 'Waiting', h_wait_sub: 'Withdrawable once the lock or vesting period ends', h_info: 'Manual', h_info_sub: 'Needs a protocol-specific flow; the link opens the protocol UI', h_tokens: 'Tokens', h_tokens_sub: 'Freely tradable balances sitting in the wallet (≥ $1)', h_native: 'Native coins', h_cov: 'Coverage matrix', h_cov_sub: 'Data source and coverage level per chain', h_log: 'Activity',
+      th_chain: 'Chain', th_what: 'Asset', th_amount: 'Amount', th_note: 'Details', th_when: 'Unlocks', th_balance: 'Balance', th_txs: 'Txs',
+      lg_full: 'Full: token and NFT index read', lg_partial: 'Partial: limited block range', lg_native: 'Native balance only', lg_error: 'Source did not respond',
+      foot_a: 'Security.', foot1: 'The page never asks for a private key, seed phrase or signature; it only prepares unsigned transactions (to / data / value) that your wallet displays. Every transaction is simulated on behalf of the wallet before it is sent; a reverting transaction is never sent. All requests go directly to public RPC, Blockscout, Routescan, BTRScan, Etherscan, CoinGecko and Wormholescan endpoints.', foot_b: 'Disclaimer.', foot2: 'Not financial advice. Amounts are simulations and chain reads; they can change at execution time and gas is on you.', foot3: 'Open source · MIT ·',
+      bad_addr: 'Invalid address: expected 0x followed by 40 hex characters.', scanning: 'Scanning', chains: 'chains', done: 'Scan complete', findings: 'findings', stopped: 'Scan stopped', none_ready: 'Nothing withdrawable in one click right now.', none_wait: 'No pending locks or vestings.', none_info: 'No assets need a manual flow.', none_tokens: 'No balance.', none_native: 'No balance.', pending: 'Populates when the scan completes.',
+      items: 'items', full_cov: 'chains fully covered', key_saved: 'Etherscan key saved', key_cleared: 'Etherscan key removed',
+      btn_withdraw: 'Withdraw', btn_unlock: 'Unlock', btn_claim: 'Claim', btn_vest: 'Start vesting', proto_link: 'protocol UI', after: 'onwards', total_native: 'total', no_wallet: 'No EVM wallet (MetaMask, Rabby, …) detected.', connected: 'Wallet connected', wrong_wallet: 'Connected wallet is not the scanned address; nothing was sent.', different: '· differs from the scanned address', scanned_addr: '· scanned address',
+      switched: 'selected', step: 'Step', approve: 'approve in your wallet', sent: 'Sent', no_receipt: 'No receipt within 4 minutes; check the explorer link, then rescan.', reverted: 'Transaction reverted on chain; the next step was cancelled.', confirmed: 'Confirmed, block', rescan: 'Done. Rescanning in 10 seconds.', rejected: 'Signature rejected; nothing was sent.', err: 'Error',
+      src_blockscout: 'Blockscout', src_routescan: 'Routescan', src_btrscan: 'BTRScan', src_etherscan: 'Etherscan', src_logs: 'On-chain logs', src_logs_window: 'On-chain logs (last {n} blocks)', src_none: 'Native balance', src_error: 'No response',
+      cov_full: 'Token and NFT index read via {src}.', cov_partial: 'Only the last {n} blocks were scanned; older history needs an Etherscan key.', cov_native_key: 'A free Etherscan API key is required for the token index (see the field above).', cov_native_none: 'No public token index exists for this chain; native balance and known position managers were read.', cov_error: 'The data source did not respond; rescan later.',
+      note_pos: 'decreaseLiquidity + collect simulated on behalf of the wallet.', note_pos_fail: 'Withdrawal simulation failed', note_lp: 'Pool share', note_lp_two: 'Withdrawal takes two transactions: send the LP to the pair, then call burn.', note_lp_router: 'Withdrawn through the router: approve + removeLiquidity, 98% minimums.', note_lp_unpriced: 'No price available.', note_lp_big: 'Valuable position and this pair’s router is not recognised: two separate transactions carry MEV risk; withdraw in one transaction through the protocol UI.', note_lp_noabi: 'LP token without a pair interface; withdraw through the protocol UI.',
+      note_escrow: 'Lock/escrow token: vesting or lock period is resolved in the protocol UI.', note_token: 'Standard token; visible in the wallet.', note_aave: 'withdraw(asset, max, owner). Partial if there is open debt.', note_ctoken: 'redeem(balance). Reverts if the pool lacks liquidity.', note_bitlayer: 'claimDelayedRedeems(). Reverts before the timer ends; nothing is lost.', lbl_bitlayer: 'Bedrock uniBTC delayed redeem → BTC', lbl_aave: 'Aave-style deposit', lbl_ctoken: 'Compound-style deposit', lbl_pos: 'Concentrated liquidity position', lbl_lp: 'liquidity',
+      lbl_velock: 'vote lock (ve-NFT)', note_velock_ready: 'Lock expired; withdraw(tokenId) returns the locked amount to the wallet.', note_velock_wait: 'Lock still running; “Unlock” appears when it ends.', lbl_xtoken_pending: 'vesting', note_xtoken_ready: 'Vesting finished; claimed with finalizeRedeem.', note_xtoken_wait: 'Vesting in progress.', note_xtoken_start: 'Starts a vesting: claimable after {days} days; the shortest duration yields the lowest conversion ratio. Pick a longer duration in the protocol UI for a better ratio.', lbl_glp: 'GMX GLP (staked)', note_glp: 'unstakeAndRedeemGlp: unstakes GLP and redeems it into the wrapped native coin.',
+      note_blocked: 'Withdrawal is not possible right now, the simulation reverted: {reason}. The protocol may have paused or frozen the reserve; rescan once it reopens.', preflight_fail: 'Not sent: the preflight simulation reverted ({reason}). No gas was spent.',
+      wh_transfer: 'not redeemed on the target chain', wh_msg: 'Wormhole message looks incomplete on the target', wh_note: 'Redeem from the target wallet via Portal Bridge “Redeem”.', wh_note2: 'May be a swap or a message; amount unknown, inspect the link.'
+    }
+  };
+  var LANG = 'tr';
+  try { LANG = localStorage.getItem('wrc_lang') || ((navigator.language || '').toLowerCase().indexOf('tr') === 0 ? 'tr' : 'en'); } catch (e) { /* no storage */ }
+  function t(k, vars) { var s = (I18N[LANG] && I18N[LANG][k]) || I18N.tr[k] || k; if (vars) Object.keys(vars).forEach(function (v) { s = s.split('{' + v + '}').join(vars[v]); }); return s; }
+
+  // ============================================================ chains & sources
+  // Source ladder per chain, tried in order until one yields a token index:
+  //   bs:<url> Blockscout v2 (keyless) · rs Routescan (keyless) · btr BTRScan (keyless) · es Etherscan V2 (user key)
+  //   logs full-range eth_getLogs · logs:<window>:<n> bounded eth_getLogs (partial coverage)
+  var CHAINS = [
+    ['ethereum', 1, 'Ethereum', 'ETH', ['https://ethereum-rpc.publicnode.com', 'https://eth.llamarpc.com'], 'https://etherscan.io', 'ethereum', ['bs:https://eth.blockscout.com', 'es'], 'ethereum'],
+    ['base', 8453, 'Base', 'ETH', ['https://base-rpc.publicnode.com', 'https://mainnet.base.org'], 'https://basescan.org', 'ethereum', ['bs:https://base.blockscout.com', 'es'], 'base'],
+    ['arbitrum', 42161, 'Arbitrum One', 'ETH', ['https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc'], 'https://arbiscan.io', 'ethereum', ['bs:https://arbitrum.blockscout.com', 'es'], 'arbitrum-one'],
+    ['optimism', 10, 'Optimism', 'ETH', ['https://optimism-rpc.publicnode.com', 'https://mainnet.optimism.io'], 'https://optimistic.etherscan.io', 'ethereum', ['bs:https://optimism.blockscout.com', 'es'], 'optimistic-ethereum'],
+    ['polygon', 137, 'Polygon', 'POL', ['https://polygon-bor-rpc.publicnode.com', 'https://polygon-rpc.com'], 'https://polygonscan.com', 'polygon-ecosystem-token', ['bs:https://polygon.blockscout.com', 'es'], 'polygon-pos'],
+    ['zksync', 324, 'zkSync Era', 'ETH', ['https://mainnet.era.zksync.io'], 'https://explorer.zksync.io', 'ethereum', ['bs:https://zksync.blockscout.com'], 'zksync'],
+    ['linea', 59144, 'Linea', 'ETH', ['https://linea-rpc.publicnode.com', 'https://rpc.linea.build'], 'https://lineascan.build', 'ethereum', ['bs:https://api-explorer.linea.build', 'es'], 'linea'],
+    ['scroll', 534352, 'Scroll', 'ETH', ['https://scroll-rpc.publicnode.com', 'https://rpc.scroll.io'], 'https://scrollscan.com', 'ethereum', ['bs:https://blockscout.scroll.io', 'es'], 'scroll'],
+    ['mode', 34443, 'Mode', 'ETH', ['https://mainnet.mode.network'], 'https://explorer.mode.network', 'ethereum', ['bs:https://explorer.mode.network'], 'mode'],
+    ['manta', 169, 'Manta Pacific', 'ETH', ['https://pacific-rpc.manta.network/http'], 'https://pacific-explorer.manta.network', 'ethereum', ['bs:https://pacific-explorer.manta.network'], 'manta-pacific'],
+    ['soneium', 1868, 'Soneium', 'ETH', ['https://rpc.soneium.org'], 'https://soneium.blockscout.com', 'ethereum', ['bs:https://soneium.blockscout.com'], 'soneium'],
+    ['lisk', 1135, 'Lisk', 'ETH', ['https://rpc.api.lisk.com'], 'https://blockscout.lisk.com', 'ethereum', ['bs:https://blockscout.lisk.com'], 'lisk'],
+    ['celo', 42220, 'Celo', 'CELO', ['https://celo-rpc.publicnode.com', 'https://forno.celo.org'], 'https://celoscan.io', 'celo', ['bs:https://celo.blockscout.com', 'es'], 'celo'],
+    ['ink', 57073, 'Ink', 'ETH', ['https://rpc-gel.inkonchain.com'], 'https://explorer.inkonchain.com', 'ethereum', ['bs:https://explorer.inkonchain.com'], 'ink'],
+    ['metis', 1088, 'Metis', 'METIS', ['https://andromeda.metis.io/?owner=1088'], 'https://andromeda-explorer.metis.io', 'metis-token', ['bs:https://andromeda-explorer.metis.io'], 'metis-andromeda'],
+    ['gnosis', 100, 'Gnosis', 'xDAI', ['https://gnosis-rpc.publicnode.com', 'https://rpc.gnosischain.com'], 'https://gnosisscan.io', 'xdai', ['bs:https://gnosis.blockscout.com', 'es'], 'xdai'],
+    ['immutable', 13371, 'Immutable zkEVM', 'IMX', ['https://rpc.immutable.com'], 'https://explorer.immutable.com', 'immutable-x', ['bs:https://explorer.immutable.com'], 'immutable'],
+    ['unichain', 130, 'Unichain', 'ETH', ['https://unichain-rpc.publicnode.com'], 'https://uniscan.xyz', 'ethereum', ['bs:https://unichain.blockscout.com', 'es'], 'unichain'],
+    ['bsc', 56, 'BNB Chain', 'BNB', ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.binance.org'], 'https://bscscan.com', 'binancecoin', ['es'], 'binance-smart-chain'],
+    ['avalanche', 43114, 'Avalanche C-Chain', 'AVAX', ['https://avalanche-c-chain-rpc.publicnode.com'], 'https://snowtrace.io', 'avalanche-2', ['rs', 'es'], 'avalanche'],
+    ['bitlayer', 200901, 'Bitlayer', 'BTC', ['https://rpc.bitlayer.org'], 'https://www.btrscan.com', 'bitcoin', ['btr', 'logs'], 'bitlayer'],
+    ['hyperevm', 999, 'HyperEVM', 'HYPE', ['https://rpc.hyperliquid.xyz/evm'], 'https://hyperevmscan.io', 'hyperliquid', ['es', 'logs:900:80'], 'hyperevm'],
+    ['opbnb', 204, 'opBNB', 'BNB', ['https://opbnb-rpc.publicnode.com'], 'https://opbnbscan.com', 'binancecoin', ['es'], 'opbnb'],
+    ['taiko', 167000, 'Taiko', 'ETH', ['https://rpc.mainnet.taiko.xyz'], 'https://taikoscan.io', 'ethereum', ['es', 'logs:2000:60'], 'taiko'],
+    ['zora', 7777777, 'Zora', 'ETH', ['https://rpc.zora.energy'], 'https://explorer.zora.energy', 'ethereum', ['logs'], 'zora-network'],
+    ['blast', 81457, 'Blast', 'ETH', ['https://blast-rpc.publicnode.com'], 'https://blastscan.io', 'ethereum', ['rs', 'es', 'logs:50000:40'], 'blast'],
+    ['mantle', 5000, 'Mantle', 'MNT', ['https://mantle-rpc.publicnode.com'], 'https://mantlescan.xyz', 'mantle', ['rs', 'es', 'logs:50000:40'], 'mantle'],
+    ['polygon-zkevm', 1101, 'Polygon zkEVM', 'ETH', ['https://zkevm-rpc.com'], 'https://zkevm.polygonscan.com', 'ethereum', ['logs:10000:80'], 'polygon-zkevm'],
+    ['bob', 60808, 'BOB', 'ETH', ['https://rpc.gobob.xyz'], 'https://explorer.gobob.xyz', 'ethereum', ['logs'], 'bob-network'],
+    ['core', 1116, 'Core', 'CORE', ['https://rpc.coredao.org'], 'https://scan.coredao.org', 'coredaoorg', ['logs'], 'core'],
+    ['sonic', 146, 'Sonic', 'S', ['https://rpc.soniclabs.com'], 'https://sonicscan.org', 'sonic-3', ['logs', 'es'], 'sonic'],
+    ['sei', 1329, 'Sei EVM', 'SEI', ['https://evm-rpc.sei-apis.com'], 'https://seitrace.com', 'sei-network', ['es', 'logs:2000:60'], 'sei-v2'],
+    ['abstract', 2741, 'Abstract', 'ETH', ['https://api.mainnet.abs.xyz'], 'https://abscan.org', 'ethereum', ['logs', 'es'], 'abstract'],
+    ['fraxtal', 252, 'Fraxtal', 'frxETH', ['https://rpc.frax.com'], 'https://fraxscan.com', 'frax-ether', ['logs', 'es'], 'fraxtal'],
+    ['arbitrum-nova', 42170, 'Arbitrum Nova', 'ETH', ['https://nova.arbitrum.io/rpc'], 'https://nova.arbiscan.io', 'ethereum', ['logs'], 'arbitrum-nova'],
+    ['merlin', 4200, 'Merlin', 'BTC', ['https://rpc.merlinchain.io'], 'https://scan.merlinchain.io', 'bitcoin', ['bs:https://scan.merlinchain.io', 'logs:2000:60'], 'merlin-chain'],
+    ['b2', 223, 'B² Network', 'BTC', ['https://rpc.bsquared.network'], 'https://explorer.bsquared.network', 'bitcoin', [], 'bsquared-network']
+  ].map(function (r) { return { key: r[0], id: r[1], hex: '0x' + r[1].toString(16), name: r[2], sym: r[3], rpc: r[4], explorer: r[5], cg: r[6], sources: r[7], cgPlatform: r[8] }; });
+  var CHAIN = {}; CHAINS.forEach(function (c) { CHAIN[c.key] = c; });
+  var KNOWN_NPMS = {
+    ethereum: ['0xc36442b4a4522e871399cd717abdd847ab11fe88'], arbitrum: ['0xc36442b4a4522e871399cd717abdd847ab11fe88'], optimism: ['0xc36442b4a4522e871399cd717abdd847ab11fe88'], polygon: ['0xc36442b4a4522e871399cd717abdd847ab11fe88'],
+    base: ['0x03a520b32c04bf3beef7beb72e919cf822ed34f1'], bsc: ['0x7b8a01b39d58278b5de7e48c8449c9f4f5170613', '0x46a15b0b27311cedf172ab29e4f4766fbe7f4364'], zksync: ['0xa815e2ed7f7d5b0c49fda367f249232a1b9d2883'], linea: ['0x46a15b0b27311cedf172ab29e4f4766fbe7f4364'],
+    celo: ['0x3d79edaabc0eab6f08ed885c05fc0b014290d95a'], avalanche: ['0x655c406ebfa14ee2006250925e54ec43ad184f8b']
+  };
+  // Known v2 routers keyed by pair factory (lower-case). Validated at runtime: router.factory() must equal the pair's factory.
+  var FACTORY_ROUTERS = {
+    '0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f': { router: '0x7a250d5630b4cf539739df2c5dacb4c659f2488d', kind: 'uni' },   // Uniswap V2 · Ethereum
+    '0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac': { router: '0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f', kind: 'uni' },   // SushiSwap · Ethereum
+    '0xca143ce32fe78f1f7019d7d551a6402fc5350c73': { router: '0x10ed43c718714eb63d5aa57b78b54704e256024e', kind: 'uni' },   // PancakeSwap V2 · BNB Chain
+    '0x8909dc15e40173ff4699343b6eb8132c65e18ec6': { router: '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24', kind: 'uni' },   // Uniswap V2 · Base / BNB Chain
+    '0xf1d7cc64fb4452f05c498126312ebe29f30fbcf9': { router: '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24', kind: 'uni' },   // Uniswap V2 · Arbitrum
+    '0x0c3c1c532f1e39edf36be9fe0be1410313e074bf': { router: '0x4a7b5da61326a6379179b40d00f57e5bbdc962c2', kind: 'uni' },   // Uniswap V2 · Optimism
+    '0x9e5a52f57b3038f1b8eee45f28b3c1967e22799c': { router: '0xedf6066a2b290c185783862c7f4776a2c8077ad1', kind: 'uni' },   // Uniswap V2 · Polygon
+    '0x1f98400000000000000000000000000000000002': { router: '0x284f11109359a7e1306c3e447ef14d38400063ff', kind: 'uni' },   // Uniswap V2 · Unichain
+    '0x420dd381b31aef6683db6b902084cb0ffece40da': { router: '0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43', kind: 'solidly' }, // Aerodrome · Base
+    '0xf1046053aa5682b4f9a81b5481394da16be5ff5a': { router: '0xa062ae8a9c5e11aaa026fc2670b0d65ccc8b2858', kind: 'solidly' }  // Velodrome V2 · Optimism
+  };
+  var GMX = { arbitrum: { router: '0xb95db5b167d75e6d04227cfffa61069348d271f5', out: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1' }, avalanche: { router: '0x82147c5a7e850ea4e28155df107f2590fd4ba327', out: '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7' } };
+  var PROTO_LINKS = [[/^xGRAIL/i, 'https://app.camelot.exchange/xgrail'], [/^xKIM/i, 'https://app.kim.exchange'], [/^veMAV/i, 'https://app.mav.xyz'], [/^veKYO/i, 'https://kyo.finance'], [/GLP/i, 'https://app.gmx.io/#/earn'], [/DODO/i, 'https://app.dodoex.io/pool'], [/^LLP$/i, 'https://portal.lisk.com']];
+  var BITLAYER_REDEEM_ROUTER = '0xe001ce855f9e964e5243f0ff11f2353dc371e810';
+  var TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+  var SEL = { balanceOf: '0x70a08231', ownerOf: '0x6352211e', tokenOfOwnerByIndex: '0x2f745c59', positions: '0x99fbab88', multicall: '0xac9650d8', decreaseLiquidity: '0x0c49ccbe', collect: '0xfc6f7865', token0: '0x0dfe1681', token1: '0xd21220a7', getReserves: '0x0902f1ac', totalSupply: '0x18160ddd', symbol: '0x95d89b41', name: '0x06fdde03', decimals: '0x313ce567', POOL: '0x7535d246', UNDERLYING: '0xb16a19de', withdraw3: '0x69328dec', exchangeRateStored: '0x182df0f5', underlying: '0x6f307dc3', redeem: '0xdb006a75', transfer: '0xa9059cbb', burn: '0x89afcb44', getUserDelayedRedeems: '0x99a49065', redeemDelay: '0xd2adf402', claimDelayedRedeems: '0xf2881130', getReserveData: '0x35ea6a75', locked: '0xb45a3c0e', withdraw1: '0x2e1a7d4d', minRedeemDuration: '0xc4b10766', getUserRedeemsLength: '0xb90c2b52', getUserRedeem: '0xcc6c5423', finalizeRedeem: '0xaff6cbf1', redeem2: '0x7cbc2373', factory: '0xc45a0155', stable: '0x22be3de1', removeLiquidityUni: '0xbaa2abde', removeLiquiditySolidly: '0x0dede6c4', approve: '0x095ea7b3', allowance: '0xdd62ed3e', unstakeAndRedeemGlp: '0x0f3aa554' };
+  var POS_NFT_RE = /position|-POS\b|POS$|ALGB|VELO-CL|CL-POS|NFT-V/i, VE_NFT_RE = /^ve|voting escrow|vote.?escrow|locked/i;
+  var LP_RE = /^UNI-V2$|^vAMM|^sAMM|^CL-|-LP$|^SLP$|LP Token|^KIM-LP|LPs?$|Pair|-V2$|^Cake-LP$|^PGL$|^JLP$|^SUSHI-LP$/i;
+  var ESCROW_PREFIX_RE = /^ve[A-Z]|^x[A-Z][A-Za-z]{1,6}$|^es[A-Z]/, ESCROW_RE = /escrow|Voting Escrow|Locked|Lock(ing)? Position|vest/i;
+  var SPAM_RE = /claim|http|www\.|\.com|\.io|\.xyz|\.net|\.cc|\.li\b|\.top|\.cfd|\.biz|\.store|\.app\b|\.site|\.online|airdrop|giveaway|ticket|visit|reward|swap for|mock|t\.me|telegram|\w+:(org|com|net|io|xyz)\b/i;
+  var STABLE = { USDC: 1, 'USDC.E': 1, USDT: 1, USDT0: 1, 'USD₮0': 1, DAI: 1, USDBC: 1, USDZC: 1, XDAI: 1, WXDAI: 1, BUSD: 1, FRAX: 1, USDB: 1, USDS: 1, CUSD: 1, USDE: 1 };
+  var SYM_TO_CG = { ETH: 'ethereum', WETH: 'ethereum', 'WETH.E': 'ethereum', CETH: 'ethereum', WBTC: 'bitcoin', BTCB: 'bitcoin', BTC: 'bitcoin', UNIBTC: 'bitcoin', POL: 'polygon-ecosystem-token', WPOL: 'polygon-ecosystem-token', WMATIC: 'polygon-ecosystem-token', MATIC: 'polygon-ecosystem-token', BNB: 'binancecoin', WBNB: 'binancecoin', AVAX: 'avalanche-2', WAVAX: 'avalanche-2', CELO: 'celo', OP: 'optimism', ARB: 'arbitrum', HYPE: 'hyperliquid', WHYPE: 'hyperliquid', WSTETH: 'wrapped-steth', EZETH: 'renzo-restaked-eth', WEETH: 'wrapped-eeth', RSETH: 'kelp-dao-restaked-eth', MNT: 'mantle', WMNT: 'mantle', METIS: 'metis-token', IMX: 'immutable-x', S: 'sonic-3', WS: 'sonic-3', CORE: 'coredaoorg', WCORE: 'coredaoorg', SEI: 'sei-network', LSK: 'lisk', MODE: 'mode', ZK: 'zksync', STRK: 'starknet', GRAIL: 'camelot-token', KIM: 'kim-exchange', MAV: 'maverick-protocol', GLP: 'glp' };
+  var LP_SAFE_USD = 20, MAX_U128 = (1n << 128n) - 1n, MAX_U256 = (1n << 256n) - 1n, TS_LO = 1500000000n, TS_HI = 4000000000n, MAX_CONTRACTS = 220;
+
+  // ============================================================ ABI helpers
+  function w(v) { return BigInt(v).toString(16).padStart(64, '0'); }
+  function wa(a) { return a.replace(/^0x/, '').toLowerCase().padStart(64, '0'); }
+  function words(hex) { var h = (hex || '').replace(/^0x/, ''); var out = []; for (var i = 0; i + 64 <= h.length; i += 64) out.push(BigInt('0x' + h.slice(i, i + 64))); return out; }
+  function sInt(bi) { return bi >= (1n << 255n) ? bi - (1n << 256n) : bi; }
+  function addrOf(bi) { return '0x' + bi.toString(16).padStart(40, '0').slice(-40); }
+  function encBytesArr(items) { var head = w(0x20) + w(items.length), offs = [], body = '', cur = 32 * items.length; items.forEach(function (it) { var h = it.replace(/^0x/, ''); var n = h.length / 2; offs.push(cur); body += w(n) + h.padEnd(Math.ceil(n / 32) * 64, '0'); cur += 32 + Math.ceil(n / 32) * 32; }); return SEL.multicall + head + offs.map(w).join('') + body; }
+  function decBytesArrLast(hex) { var h = hex.replace(/^0x/, ''); var W = words(h); var n = Number(W[1]); var off = Number(W[2 + n - 1]) * 2; var base = 128 + off; var len = Number(BigInt('0x' + h.slice(base, base + 64))) * 2; return '0x' + h.slice(base + 64, base + 64 + len); }
+  function decodeString(hex) { var h = (hex || '').replace(/^0x/, ''); if (!h) return ''; var bytes = []; for (var i = 0; i < h.length; i += 2) bytes.push(parseInt(h.slice(i, i + 2), 16)); var text = function (arr) { try { return new TextDecoder().decode(new Uint8Array(arr)).replace(/\0+$/g, ''); } catch (e) { return ''; } }; if (bytes.length >= 64) { var len = Number(BigInt('0x' + h.slice(64, 128))); return text(bytes.slice(64, 64 + len)); } return text(bytes); }
+  function decodePositions(hex) { var W = words(hex); if (W.length >= 12) return { layout: 'univ3', token0: addrOf(W[2]), token1: addrOf(W[3]), liquidity: W[7], owed0: W[10], owed1: W[11] }; if (W.length === 11) return { layout: 'algebra', token0: addrOf(W[2]), token1: addrOf(W[3]), liquidity: W[6], owed0: W[9], owed1: W[10] }; return null; }
+  function deadline() { return BigInt(Math.floor(Date.now() / 1000) + 3600); }
+  function buildClWithdraw(npm, tokenId, liquidity, owner) { var calls = []; if (liquidity > 0n) calls.push(SEL.decreaseLiquidity + w(tokenId) + w(liquidity) + w(0) + w(0) + w(deadline())); calls.push(SEL.collect + w(tokenId) + wa(owner) + w(MAX_U128) + w(MAX_U128)); return [{ to: npm, data: encBytesArr(calls), value: '0x0' }]; }
+  function buildLpBurn(lp, balance, owner) { return [{ to: lp, data: SEL.transfer + wa(lp) + w(balance), value: '0x0' }, { to: lp, data: SEL.burn + wa(owner), value: '0x0' }]; }
+  function buildRouterRemove(a) { var steps = [{ to: a.lp, data: SEL.approve + wa(a.router) + w(a.balance), value: '0x0' }]; if (a.kind === 'solidly') steps.push({ to: a.router, data: SEL.removeLiquiditySolidly + wa(a.token0) + wa(a.token1) + w(a.stable ? 1 : 0) + w(a.balance) + w(a.min0) + w(a.min1) + wa(a.owner) + w(deadline()), value: '0x0' }); else steps.push({ to: a.router, data: SEL.removeLiquidityUni + wa(a.token0) + wa(a.token1) + w(a.balance) + w(a.min0) + w(a.min1) + wa(a.owner) + w(deadline()), value: '0x0' }); return steps; }
+  function buildAaveWithdraw(pool, asset, owner) { return [{ to: pool, data: SEL.withdraw3 + wa(asset) + w(MAX_U256) + wa(owner), value: '0x0' }]; }
+  function buildCtokenRedeem(ctoken, balance) { return [{ to: ctoken, data: SEL.redeem + w(balance), value: '0x0' }]; }
+  function buildBitlayerClaim() { return [{ to: BITLAYER_REDEEM_ROUTER, data: SEL.claimDelayedRedeems, value: '0x0' }]; }
+  function buildVeWithdraw(ve, tokenId) { return [{ to: ve, data: SEL.withdraw1 + w(tokenId), value: '0x0' }]; }
+  function buildXFinalize(x, index) { return [{ to: x, data: SEL.finalizeRedeem + w(index), value: '0x0' }]; }
+  function buildXRedeem(x, amount, duration) { return [{ to: x, data: SEL.redeem2 + w(amount) + w(duration), value: '0x0' }]; }
+  function buildGlpUnstake(router, out, amount, owner) { return [{ to: router, data: SEL.unstakeAndRedeemGlp + wa(out) + w(amount) + w(0) + wa(owner), value: '0x0' }]; }
+  function parseDelayedRedeems(hex) { var W = words(hex); if (W.length < 2) return []; var n = Number(W[1]), out = []; for (var i = 0; i < n; i++) { var a = W[2 + i * 3], b = W[3 + i * 3], tok = W[4 + i * 3]; if (tok === undefined) break; var amt, ts; if (b >= TS_LO && b <= TS_HI) { amt = a; ts = b; } else if (a >= TS_LO && a <= TS_HI) { amt = b; ts = a; } else continue; out.push({ amount: amt, createdAt: Number(ts), token: addrOf(tok) }); } return out; }
+  function classify(symbol, name, type) { var s = (symbol || '') + ' ' + (name || ''); if (SPAM_RE.test(s)) return 'spam'; if (type === 'ERC-721' || type === 'ERC-1155') return POS_NFT_RE.test(s) ? 'position_nft' : (VE_NFT_RE.test(s) ? 've_nft' : 'nft'); if (LP_RE.test(symbol || '') || LP_RE.test(name || '')) return 'lp'; if (ESCROW_PREFIX_RE.test(symbol || '') || ESCROW_RE.test(symbol || '') || ESCROW_RE.test(name || '')) return 'escrow'; return 'token'; }
+  function protoLink(sym, name) { var s = (sym || '') + ' ' + (name || ''); for (var i = 0; i < PROTO_LINKS.length; i++) if (PROTO_LINKS[i][0].test(sym || '') || PROTO_LINKS[i][0].test(s)) return PROTO_LINKS[i][1]; return null; }
+  function fnum(x, d) { return Number(x).toLocaleString(LANG === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: d === undefined ? 6 : d }); }
+  function fmtAmt(bi, dec) { var v = Number(bi) / Math.pow(10, dec); if (v === 0) return '0'; return v >= 1 ? fnum(v, 4) : Number(v.toPrecision(4)).toString(); }
+  function buildSteps(it, owner) { var a = it.action || {}; switch (a.kind) { case 'cl_withdraw': return buildClWithdraw(a.npm, BigInt(a.tokenId), BigInt(a.liquidity), owner); case 'lp_burn': return buildLpBurn(a.lp, BigInt(a.balance), owner); case 'lp_router': return buildRouterRemove({ lp: a.lp, router: a.router, kind: a.routerKind, token0: a.token0, token1: a.token1, stable: a.stable, balance: BigInt(a.balance), min0: BigInt(a.min0), min1: BigInt(a.min1), owner: owner }); case 'aave_withdraw': return buildAaveWithdraw(a.pool, a.asset, owner); case 'ctoken_redeem': return buildCtokenRedeem(a.ctoken, BigInt(a.balance)); case 'bitlayer_claim': return buildBitlayerClaim(); case 've_withdraw': return buildVeWithdraw(a.ve, BigInt(a.tokenId)); case 'x_finalize': return buildXFinalize(a.x, BigInt(a.index)); case 'x_redeem': return buildXRedeem(a.x, BigInt(a.amount), BigInt(a.duration)); case 'glp_unstake': return buildGlpUnstake(a.router, a.out, BigInt(a.amount), owner); default: return []; } }
+  function actionLabel(kind) { return kind === 've_withdraw' ? t('btn_unlock') : kind === 'x_finalize' ? t('btn_claim') : kind === 'x_redeem' ? t('btn_vest') : t('btn_withdraw'); }
+
+  // ============================================================ network layer
+  function limiter(n) { var active = 0, q = []; function next() { if (active >= n || !q.length) return; active++; var job = q.shift(); job.fn().then(job.res, job.rej).finally(function () { active--; next(); }); } return function (fn) { return new Promise(function (res, rej) { q.push({ fn: fn, res: res, rej: rej }); next(); }); }; }
+  var rpcLimit = limiter(12), HOST_LIMIT = {};
+  function hostLimit(url) { var h; try { h = new URL(url).host; } catch (e) { h = url; } if (!HOST_LIMIT[h]) HOST_LIMIT[h] = limiter(2); return HOST_LIMIT[h]; }
+  function withTimeout(ms) { var c = new AbortController(); setTimeout(function () { c.abort(); }, ms); return c.signal; }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  async function rpc(chain, method, params) { var last = 'no rpc'; for (var i = 0; i < chain.rpc.length; i++) { try { var r = await fetch(chain.rpc[i], { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params }), signal: withTimeout(15000) }); var j = await r.json(); if (j.error) { var e = new Error(String(j.error.message || JSON.stringify(j.error)).slice(0, 160)); e.rpcError = true; e.data = j.error.data; throw e; } return j.result; } catch (e) { last = e; if (e.rpcError) throw e; } } throw (last instanceof Error ? last : new Error(String(last))); }
+  function call(chain, to, data, from) { var o = { to: to, data: data }; if (from) o.from = from; return rpcLimit(function () { return rpc(chain, 'eth_call', [o, 'latest']); }); }
+  async function getJson(url, timeoutMs) { var lim = hostLimit(url); for (var attempt = 0; attempt < 3; attempt++) { try { var r = await lim(function () { return fetch(url, { headers: { accept: 'application/json' }, signal: withTimeout(timeoutMs || 30000) }); }); if (r.status === 200) return await r.json(); if (r.status === 404) return null; if (r.status !== 429 && r.status < 500) return null; } catch (e) { /* retry */ } if (attempt < 2) await sleep(1500 * Math.pow(2, attempt)); } throw new Error('unreachable'); }
+  async function coingecko(ids) { try { var r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + Array.from(ids).sort().join(',') + '&vs_currencies=usd', { signal: withTimeout(15000) }); var j = await r.json(); var out = {}; Object.keys(j).forEach(function (k) { if (j[k] && j[k].usd != null) out[k] = Number(j[k].usd); }); return out; } catch (e) { return {}; } }
+  async function coingeckoTokens(platform, addrs) { var out = {}; if (!platform || !addrs.length) return out; for (var i = 0; i < addrs.length; i += 80) { try { var r = await fetch('https://api.coingecko.com/api/v3/simple/token_price/' + platform + '?contract_addresses=' + addrs.slice(i, i + 80).join(',') + '&vs_currencies=usd', { signal: withTimeout(15000) }); var j = await r.json(); Object.keys(j).forEach(function (k) { if (j[k] && j[k].usd != null) out[k.toLowerCase()] = Number(j[k].usd); }); } catch (e) { /* unpriced */ } } return out; }
+  var AAVE_ERR = { 26: 'INVALID_AMOUNT', 27: 'RESERVE_INACTIVE', 28: 'RESERVE_FROZEN', 29: 'RESERVE_PAUSED', 32: 'NOT_ENOUGH_AVAILABLE_USER_BALANCE', 35: 'HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD', 36: 'COLLATERAL_CANNOT_BE_LIQUIDATED' };
+  function revertReason(e) { var msg = String((e && e.message) || e || ''); var m = /execution reverted:?\s*(.*)$/i.exec(msg); var reason = m ? m[1].trim() : msg; var data = e && e.data; if (typeof data === 'string' && data.indexOf('0x08c379a0') === 0) { try { reason = decodeString('0x' + data.slice(10)) || reason; } catch (x) { /* keep */ } } if (/^\d{1,3}$/.test(reason) && AAVE_ERR[Number(reason)]) reason = 'Aave ' + reason + ' · ' + AAVE_ERR[Number(reason)]; return reason.slice(0, 120) || 'reverted'; }
+  async function preflight(chain, step, from) { try { await rpcLimit(function () { return rpc(chain, 'eth_call', [{ from: from, to: step.to, data: step.data, value: step.value || '0x0' }, 'latest']); }); } catch (e) { return { ok: false, reason: revertReason(e) }; } var gas = null; try { gas = BigInt(await rpcLimit(function () { return rpc(chain, 'eth_estimateGas', [{ from: from, to: step.to, data: step.data, value: step.value || '0x0' }]); })); } catch (e) { gas = null; } return { ok: true, gas: gas ? '0x' + (gas * 13n / 10n).toString(16) : null }; }
+  var META = {};
+  async function erc20Meta(chain, token) { var key = chain.key + ':' + token.toLowerCase(); if (META[key]) return META[key]; var sym = token.slice(0, 8), name = '', dec = 18; try { sym = decodeString(await call(chain, token, SEL.symbol)) || sym; } catch (e) { /* keep */ } try { name = decodeString(await call(chain, token, SEL.name)) || ''; } catch (e) { /* keep */ } try { dec = Number(BigInt(await call(chain, token, SEL.decimals))); } catch (e) { /* keep */ } META[key] = { sym: sym, name: name, dec: dec }; return META[key]; }
+
+  // ============================================================ token index sources
+  async function srcBlockscout(base, chain, address) {
+    var toks = await getJson(base + '/api/v2/addresses/' + address + '/tokens?type=ERC-20'), nfts = await getJson(base + '/api/v2/addresses/' + address + '/nft?type=ERC-721');
+    if (!toks && !nfts) throw new Error('blockscout empty');
+    var erc20 = ((toks && toks.items) || []).map(function (it) { var tk = it.token || {}; return { address: (tk.address_hash || tk.address || '').toLowerCase(), balance: BigInt(it.value || 0), symbol: tk.symbol, name: tk.name, decimals: tk.decimals != null ? Number(tk.decimals) : undefined, rate: tk.exchange_rate ? Number(tk.exchange_rate) : null }; }).filter(function (x) { return x.address; });
+    var nft = ((nfts && nfts.items) || []).map(function (it) { var tk = it.token || {}; return { address: (tk.address_hash || tk.address || '').toLowerCase(), id: it.id, symbol: tk.symbol, name: tk.name }; }).filter(function (x) { return x.address && x.id != null; });
+    return { erc20: erc20, nfts: nft };
+  }
+  async function srcEtherscanLike(baseUrl, chain, address, keyParam) {
+    var tx = await getJson(baseUrl + '?module=account&action=tokentx&address=' + address + '&page=1&offset=1000&sort=desc' + keyParam);
+    if (!tx || (String(tx.status) !== '1' && !(Array.isArray(tx.result) && tx.result.length === 0))) { var msg = tx && typeof tx.result === 'string' ? tx.result : (tx && tx.message) || 'no data'; if (/no transactions found/i.test(msg)) return { erc20: [], nfts: [] }; throw new Error(msg.slice(0, 80)); }
+    var seen = {}, erc20 = []; (tx.result || []).forEach(function (r) { var a = String(r.contractAddress || '').toLowerCase(); if (a && !seen[a]) { seen[a] = 1; erc20.push({ address: a, symbol: r.tokenSymbol, name: r.tokenName, decimals: r.tokenDecimal != null ? Number(r.tokenDecimal) : undefined }); } });
+    var nfts = [], seenN = {}; try { var nt = await getJson(baseUrl + '?module=account&action=tokennfttx&address=' + address + '&page=1&offset=1000&sort=desc' + keyParam); ((nt && nt.result) || []).forEach(function (r) { var a = String(r.contractAddress || '').toLowerCase(), k = a + ':' + r.tokenID; if (a && r.tokenID != null && !seenN[k]) { seenN[k] = 1; nfts.push({ address: a, id: r.tokenID, symbol: r.tokenSymbol, name: r.tokenName }); } }); } catch (e) { /* NFT list optional */ }
+    return { erc20: erc20, nfts: nfts };
+  }
+  function srcRoutescan(chain, address) { return srcEtherscanLike('https://api.routescan.io/v2/network/mainnet/evm/' + chain.id + '/etherscan/api', chain, address, ''); }
+  function srcBtrscan(chain, address) { return srcEtherscanLike('https://api.btrscan.com/scan/api', chain, address, ''); }
+  function srcEtherscan(chain, address, key) { return srcEtherscanLike('https://api.etherscan.io/v2/api?chainid=' + chain.id, chain, address, '&apikey=' + encodeURIComponent(key)); }
+  async function srcLogs(chain, address, windowSize, maxWindows, coverageOut) {
+    var padded = '0x' + wa(address), latest = Number(BigInt(await rpc(chain, 'eth_blockNumber', []))), logs = [], scanned = null;
+    async function query(from, to) { return rpc(chain, 'eth_getLogs', [{ fromBlock: '0x' + from.toString(16), toBlock: '0x' + to.toString(16), topics: [TRANSFER_TOPIC, null, padded] }]); }
+    if (!windowSize) { try { logs = await query(0, latest); scanned = latest; } catch (e) { var m = /(\d{3,})/.exec(String(e.message || '')); if (!m) throw e; windowSize = Math.max(500, Math.min(50000, Number(m[1]))); maxWindows = maxWindows || 60; } }
+    if (windowSize) {
+      var from = latest, n = 0, failures = 0;
+      while (from > 0 && n < maxWindows && !STOP) {
+        var lo = Math.max(0, from - windowSize + 1), part = null;
+        for (var attempt = 0; attempt < 3 && part === null; attempt++) { try { part = await query(lo, from); } catch (e) { if (!/rate|429|limit|too many|busy/i.test(String(e.message || e)) || attempt === 2) { part = undefined; break; } await sleep(800 * Math.pow(2, attempt)); } }
+        if (!part) { if (++failures >= 2) break; from = lo - 1; n++; continue; }
+        logs = logs.concat(part); from = lo - 1; n++; await sleep(250);
+      }
+      scanned = latest - from;
+    }
+    var seen = {}, erc20 = [], seenN = {}, nfts = [];
+    logs.forEach(function (l) { var a = String(l.address || '').toLowerCase(); if (!a) return; if (l.topics.length === 4) { var id = BigInt(l.topics[3]).toString(), k = a + ':' + id; if (!seenN[k]) { seenN[k] = 1; nfts.push({ address: a, id: id }); } } else if (l.topics.length === 3 && !seen[a]) { seen[a] = 1; erc20.push({ address: a }); } });
+    if (coverageOut) { coverageOut.partial = !!windowSize; coverageOut.blocks = scanned; }
+    return { erc20: erc20, nfts: nfts };
+  }
+
+  // ============================================================ scan
+  var STATE = null, STOP = false, ETH_KEY = '';
+  try { ETH_KEY = localStorage.getItem('wrc_eskey') || ''; } catch (e) { /* none */ }
+  function usdBySymbol(sym, amount, prices) { var s = (sym || '').toUpperCase(); if (STABLE[s]) return amount; var cg = SYM_TO_CG[s]; return cg && prices[cg] != null ? amount * prices[cg] : null; }
+  async function runScan(address, onProgress) {
+    var st = { address: address, status: 'running', updated: Date.now(), progress: [], natives: [], items: [], coverage: {}, prices: {} };
+    CHAINS.forEach(function (c) { st.coverage[c.key] = { level: 'pending', source: '' }; });
+    var seenPos = {}, rateCache = {}, n = 0, now = function () { return Math.floor(Date.now() / 1000); };
+    function item(o) { o.id = 'i' + (++n); st.items.push(o); }
+    async function itemChecked(c, o) {
+      if (o.status === 'ready' && o.action && o.action.kind !== 'lp_burn' && o.action.kind !== 'lp_router') {
+        var steps = buildSteps(o, address), pf = steps.length ? await preflight(c, steps[0], address) : { ok: true };
+        if (!pf.ok) {
+          var reason = pf.reason;
+          if (o.action.kind === 'aave_withdraw') { try { var cfg = words(await call(c, o.action.pool, SEL.getReserveData + wa(o.action.asset)))[0], flags = []; if (!((cfg >> 56n) & 1n)) flags.push('inactive'); if ((cfg >> 57n) & 1n) flags.push('frozen'); if ((cfg >> 60n) & 1n) flags.push('paused'); if (flags.length) reason += ' · reserve ' + flags.join('/'); } catch (e) { /* flags optional */ } }
+          o.status = 'info'; o.note = t('note_blocked', { reason: reason }) + (o.note ? ' · ' + o.note : ''); delete o.action;
+        }
+      }
+      item(o);
+    }
+    async function tokenUsd(c, token, sym, amount, rateHint) {
+      var key = c.key + ':' + token.toLowerCase();
+      if (rateHint != null) rateCache[key] = rateHint;
+      if (!(key in rateCache)) { var bs = (c.sources.filter(function (s) { return s.indexOf('bs:') === 0; })[0] || '').slice(3), rate = null; if (bs) { try { var j = await getJson(bs + '/api/v2/tokens/' + token); rate = j && j.exchange_rate ? Number(j.exchange_rate) : null; } catch (e) { rate = null; } } if (rate == null) { var cgp = await coingeckoTokens(c.cgPlatform, [token]); rate = cgp[token.toLowerCase()] != null ? cgp[token.toLowerCase()] : null; } rateCache[key] = rate; }
+      if (rateCache[key] != null) return amount * rateCache[key];
+      if (STABLE[(sym || '').toUpperCase()] && c.sources.some(function (s) { return s.indexOf('bs:') === 0; })) return null;
+      return usdBySymbol(sym, amount, st.prices);
+    }
+    async function native(c) { try { var b = await rpc(c, 'eth_getBalance', [address, 'latest']), nc = await rpc(c, 'eth_getTransactionCount', [address, 'latest']), amt = Number(BigInt(b)) / 1e18; st.natives.push({ chain: c.key, name: c.name, sym: c.sym, amount: amt, nonce: Number(BigInt(nc)), usd: st.prices[c.cg] != null ? amt * st.prices[c.cg] : null }); } catch (e) { st.coverage[c.key] = { level: 'error', source: 'rpc' }; } }
+    async function position(c, npm, tid, label) {
+      var raw; try { raw = await call(c, npm, SEL.positions + w(tid)); } catch (e) { return; }
+      var p = decodePositions(raw); if (!p || (p.liquidity === 0n && p.owed0 === 0n && p.owed1 === 0n)) return;
+      var pk = c.key + ':' + npm.toLowerCase() + ':' + tid; if (seenPos[pk]) return; seenPos[pk] = 1;
+      try { if (addrOf(BigInt(await call(c, npm, SEL.ownerOf + w(tid)))) !== address.toLowerCase()) return; } catch (e) { /* ownerOf optional */ }
+      var m0 = await erc20Meta(c, p.token0), m1 = await erc20Meta(c, p.token1), a0 = null, a1 = null, note;
+      try { var tx = buildClWithdraw(npm, tid, p.liquidity, address)[0], res = await call(c, npm, tx.data, address), last = words(decBytesArrLast(res)); a0 = last[0]; a1 = last[1]; note = t('note_pos'); } catch (e) { note = t('note_pos_fail') + ' (' + revertReason(e) + ')'; }
+      if (a0 !== null && a0 === 0n && a1 === 0n) return;
+      var v0 = Number(a0 || 0n) / Math.pow(10, m0.dec), v1 = Number(a1 || 0n) / Math.pow(10, m1.dec), u0 = await tokenUsd(c, p.token0, m0.sym, v0), u1 = await tokenUsd(c, p.token1, m1.sym, v1), usd = (u0 == null && u1 == null) ? null : (u0 || 0) + (u1 || 0);
+      item({ chain: c.key, chain_name: c.name, kind: 'cl_position', status: a0 !== null ? 'ready' : 'info', label: label + ' #' + tid + ' · ' + m0.sym + '/' + m1.sym, amount: fmtAmt(a0 || 0n, m0.dec) + ' ' + m0.sym + ' + ' + fmtAmt(a1 || 0n, m1.dec) + ' ' + m1.sym, usd: usd, note: note, explorer: c.explorer + '/token/' + npm + '?a=' + tid, action: { kind: 'cl_withdraw', npm: npm, tokenId: String(tid), liquidity: p.liquidity.toString() } });
+    }
+    async function veLock(c, ve, tid, meta) {
+      var raw; try { raw = await call(c, ve, SEL.locked + w(tid)); } catch (e) { return false; }
+      var W = words(raw); if (W.length < 2) return false; var amount = sInt(W[0]), end = Number(W[1]); if (amount <= 0n) return true;
+      var under = null; try { under = addrOf(BigInt(await call(c, ve, '0xfc0c546a'))); } catch (e) { under = null; } // token()
+      var um = under ? await erc20Meta(c, under) : { sym: meta.sym || 've', dec: 18 }, v = Number(amount) / Math.pow(10, um.dec), usd = under ? await tokenUsd(c, under, um.sym, v) : null, ready = end > 0 && now() >= end;
+      await itemChecked(c, { chain: c.key, chain_name: c.name, kind: 've_lock', status: ready ? 'ready' : 'waiting', available_at: end, label: (meta.sym || meta.name || 'veNFT') + ' #' + tid + ' · ' + t('lbl_velock') + ' (' + um.sym + ')', amount: fmtAmt(amount, um.dec) + ' ' + um.sym, usd: usd, note: ready ? t('note_velock_ready') : t('note_velock_wait'), explorer: c.explorer + '/token/' + ve + '?a=' + tid, action: { kind: 've_withdraw', ve: ve, tokenId: String(tid) } });
+      return true;
+    }
+    async function xToken(c, token, bal, meta) {
+      var minDur; try { minDur = BigInt(await call(c, token, SEL.minRedeemDuration)); } catch (e) { return false; }
+      var under = null; try { under = addrOf(BigInt(await call(c, token, '0xfc0c546a'))); } catch (e) { try { under = addrOf(BigInt(await call(c, token, '0xbf75f1bd'))); } catch (x) { under = null; } } // token() / grailToken()
+      var um = under ? await erc20Meta(c, under) : { sym: (meta.sym || '').replace(/^x/, ''), dec: meta.dec }, link = protoLink(meta.sym, meta.name);
+      var len = 0; try { len = Number(BigInt(await call(c, token, SEL.getUserRedeemsLength + wa(address)))); } catch (e) { len = 0; }
+      for (var i = 0; i < Math.min(len, 20); i++) {
+        var r; try { r = words(await call(c, token, SEL.getUserRedeem + wa(address) + w(i))); } catch (e) { break; }
+        if (r.length < 3) break; var amt = r[0], end = Number(r[2]), ready = now() >= end, v = Number(amt) / Math.pow(10, um.dec), usd = under ? await tokenUsd(c, under, um.sym, v) : null;
+        await itemChecked(c, { chain: c.key, chain_name: c.name, kind: 'x_vesting', status: ready ? 'ready' : 'waiting', available_at: end, label: meta.sym + ' → ' + um.sym + ' · ' + t('lbl_xtoken_pending') + ' #' + i, amount: fmtAmt(amt, um.dec) + ' ' + um.sym, usd: usd, note: ready ? t('note_xtoken_ready') : t('note_xtoken_wait'), explorer: link || (c.explorer + '/address/' + token), action: { kind: 'x_finalize', x: token, index: String(i) } });
+      }
+      if (bal > 0n) { var vb = Number(bal) / Math.pow(10, meta.dec), usdb = under ? await tokenUsd(c, under, um.sym, vb) : null, days = Math.round(Number(minDur) / 86400); await itemChecked(c, { chain: c.key, chain_name: c.name, kind: 'x_token', status: 'ready', label: meta.sym + ' · ' + (meta.name || ''), amount: fmtAmt(bal, meta.dec) + ' ' + meta.sym, usd: usdb, note: t('note_xtoken_start', { days: days }), explorer: link || (c.explorer + '/address/' + token), action: { kind: 'x_redeem', x: token, amount: bal.toString(), duration: minDur.toString() } }); }
+      return true;
+    }
+    async function lp(c, lpAddr, bal, symbol, name) {
+      var t0, t1, rs, ts;
+      try { t0 = addrOf(BigInt(await call(c, lpAddr, SEL.token0))); t1 = addrOf(BigInt(await call(c, lpAddr, SEL.token1))); rs = words(await call(c, lpAddr, SEL.getReserves)); ts = BigInt(await call(c, lpAddr, SEL.totalSupply)); }
+      catch (e) { item({ chain: c.key, chain_name: c.name, kind: 'lp', status: 'info', label: symbol + ' · ' + name, amount: fmtAmt(bal, 18) + ' LP', usd: null, note: t('note_lp_noabi'), explorer: protoLink(symbol, name) || (c.explorer + '/address/' + lpAddr) }); return; }
+      if (ts === 0n) return; var r0 = rs[0] * bal / ts, r1 = rs[1] * bal / ts; if (r0 === 0n && r1 === 0n) return;
+      var m0 = await erc20Meta(c, t0), m1 = await erc20Meta(c, t1); if (SPAM_RE.test(m0.sym + ' ' + m0.name) || SPAM_RE.test(m1.sym + ' ' + m1.name)) return;
+      var v0 = Number(r0) / Math.pow(10, m0.dec), v1 = Number(r1) / Math.pow(10, m1.dec), u0 = await tokenUsd(c, t0, m0.sym, v0), u1 = await tokenUsd(c, t1, m1.sym, v1), usd = (u0 == null && u1 == null) ? null : (u0 || 0) + (u1 || 0);
+      var share = t('note_lp') + ' %' + (100 * Number(bal) / Number(ts)).toFixed(4);
+      var base = { chain: c.key, chain_name: c.name, kind: 'lp', label: symbol + ' · ' + m0.sym + '/' + m1.sym + ' ' + t('lbl_lp'), amount: fmtAmt(r0, m0.dec) + ' ' + m0.sym + ' + ' + fmtAmt(r1, m1.dec) + ' ' + m1.sym, usd: usd, explorer: c.explorer + '/address/' + lpAddr };
+      // Router path (single atomic removal) whenever the pair's factory maps to a router we can verify on chain.
+      var factory = null, route = null; try { factory = addrOf(BigInt(await call(c, lpAddr, SEL.factory))); route = FACTORY_ROUTERS[factory]; } catch (e) { route = null; }
+      if (route) { try { if (addrOf(BigInt(await call(c, route.router, SEL.factory))) !== factory) route = null; } catch (e) { route = null; } }
+      if (route) { var stable = false; if (route.kind === 'solidly') { try { stable = BigInt(await call(c, lpAddr, SEL.stable)) !== 0n; } catch (e) { stable = false; } } base.status = 'ready'; base.note = share + '. ' + t('note_lp_router'); base.action = { kind: 'lp_router', lp: lpAddr, router: route.router, routerKind: route.kind, token0: t0, token1: t1, stable: stable, balance: bal.toString(), min0: (r0 * 98n / 100n).toString(), min1: (r1 * 98n / 100n).toString() }; item(base); return; }
+      if (usd != null && usd > LP_SAFE_USD) { base.status = 'info'; base.note = share + '. ' + t('note_lp_big'); item(base); return; }
+      base.status = 'ready'; base.note = share + '. ' + t('note_lp_two') + (usd == null ? ' ' + t('note_lp_unpriced') : ''); base.action = { kind: 'lp_burn', lp: lpAddr, balance: bal.toString() }; item(base);
+    }
+    async function receipt(c, token, bal, symbol) {
+      if (/^(variable|stable)Debt/i.test(symbol || '')) return true;
+      var pool = '', asset = ''; try { pool = addrOf(BigInt(await call(c, token, SEL.POOL))); asset = addrOf(BigInt(await call(c, token, SEL.UNDERLYING))); } catch (e) { pool = asset = ''; }
+      if (pool && asset && BigInt(pool) && BigInt(asset)) { var m = await erc20Meta(c, asset), v = Number(bal) / Math.pow(10, m.dec), usd = await tokenUsd(c, asset, m.sym, v); if (usd != null && usd < 0.05) return true; await itemChecked(c, { chain: c.key, chain_name: c.name, kind: 'aave', status: 'ready', label: symbol + ' · ' + t('lbl_aave') + ' (' + m.sym + ')', amount: fmtAmt(bal, m.dec) + ' ' + m.sym, usd: usd, note: t('note_aave'), explorer: c.explorer + '/address/' + token, action: { kind: 'aave_withdraw', pool: pool, asset: asset } }); return true; }
+      var rate, under; try { rate = BigInt(await call(c, token, SEL.exchangeRateStored)); under = addrOf(BigInt(await call(c, token, SEL.underlying))); } catch (e) { return false; }
+      if (rate <= 0n || !BigInt(under)) return false;
+      var mu = await erc20Meta(c, under), vu = Number(bal * rate / (10n ** 18n)) / Math.pow(10, mu.dec), usdu = await tokenUsd(c, under, mu.sym, vu); if (usdu != null && usdu < 0.05) return true;
+      await itemChecked(c, { chain: c.key, chain_name: c.name, kind: 'ctoken', status: 'ready', label: symbol + ' · ' + t('lbl_ctoken') + ' (' + mu.sym + ')', amount: '≈' + fnum(vu) + ' ' + mu.sym, usd: usdu, note: t('note_ctoken'), explorer: c.explorer + '/address/' + token, action: { kind: 'ctoken_redeem', ctoken: token, balance: bal.toString() } });
+      return true;
+    }
+    async function processIndex(c, idx) {
+      var seen = {};
+      for (var i = 0; i < idx.nfts.length && !STOP; i++) {
+        var nf = idx.nfts[i], k = nf.address + ':' + nf.id; if (seen[k]) continue; seen[k] = 1;
+        var meta = (nf.symbol || nf.name) ? { sym: nf.symbol, name: nf.name } : await erc20Meta(c, nf.address), kind = classify(meta.sym, meta.name, 'ERC-721');
+        if (kind === 'position_nft') await position(c, nf.address, BigInt(nf.id), meta.name || meta.sym || t('lbl_pos'));
+        else if (kind === 've_nft') await veLock(c, nf.address, BigInt(nf.id), meta);
+      }
+      var list = idx.erc20.slice(0, MAX_CONTRACTS);
+      for (var j = 0; j < list.length && !STOP; j++) {
+        var tk = list[j], bal = tk.balance;
+        if (bal === undefined) { try { bal = BigInt(await call(c, tk.address, SEL.balanceOf + wa(address))); } catch (e) { continue; } }
+        if (bal <= 0n) continue;
+        var meta2 = (tk.symbol !== undefined && tk.decimals !== undefined) ? { sym: tk.symbol || '', name: tk.name || '', dec: tk.decimals } : await erc20Meta(c, tk.address), kind2 = classify(meta2.sym, meta2.name, 'ERC-20');
+        if (kind2 === 'spam') continue;
+        var usd = tk.rate != null ? Number(bal) / Math.pow(10, meta2.dec) * tk.rate : null;
+        if (/^fsGLP$/i.test(meta2.sym) && GMX[c.key]) { var g = GMX[c.key], vg = Number(bal) / 1e18; await itemChecked(c, { chain: c.key, chain_name: c.name, kind: 'glp', status: 'ready', label: meta2.sym + ' · ' + t('lbl_glp'), amount: fmtAmt(bal, 18) + ' GLP', usd: usdBySymbol('GLP', vg, st.prices), note: t('note_glp'), explorer: 'https://app.gmx.io/#/earn', action: { kind: 'glp_unstake', router: g.router, out: g.out, amount: bal.toString() } }); continue; }
+        if (kind2 === 'lp') { await lp(c, tk.address, bal, meta2.sym || 'LP', meta2.name || ''); continue; }
+        if (kind2 === 'escrow') { if (await xToken(c, tk.address, bal, meta2)) continue; item({ chain: c.key, chain_name: c.name, kind: 'escrow', status: 'info', label: meta2.sym + ' · ' + meta2.name, amount: fmtAmt(bal, meta2.dec) + ' ' + meta2.sym, usd: usd, note: t('note_escrow'), explorer: protoLink(meta2.sym, meta2.name) || (c.explorer + '/address/' + tk.address) }); continue; }
+        var handled = await receipt(c, tk.address, bal, meta2.sym || '?');
+        if (!handled) { if (usd == null) usd = await tokenUsd(c, tk.address, meta2.sym, Number(bal) / Math.pow(10, meta2.dec)); if (usd != null && usd >= 1) item({ chain: c.key, chain_name: c.name, kind: 'token', status: 'token', label: meta2.sym + ' · ' + meta2.name, amount: fmtAmt(bal, meta2.dec) + ' ' + meta2.sym, usd: usd, note: t('note_token'), explorer: c.explorer + '/token/' + tk.address + '?a=' + address }); }
+      }
+    }
+    async function chainScan(c) {
+      var cov = { level: 'native', source: 'none', blocks: null, partial: false };
+      try {
+        var idx = null, used = null;
+        for (var s = 0; s < c.sources.length && !idx && !STOP; s++) {
+          var src = c.sources[s];
+          try {
+            if (src.indexOf('bs:') === 0) { idx = await srcBlockscout(src.slice(3), c, address); used = 'blockscout'; }
+            else if (src === 'rs') { idx = await srcRoutescan(c, address); used = 'routescan'; }
+            else if (src === 'btr') { idx = await srcBtrscan(c, address); used = 'btrscan'; }
+            else if (src === 'es') { if (!ETH_KEY) continue; idx = await srcEtherscan(c, address, ETH_KEY); used = 'etherscan'; }
+            else if (src.indexOf('logs') === 0) { var parts = src.split(':'), co = {}; idx = await srcLogs(c, address, parts[1] ? Number(parts[1]) : 0, parts[2] ? Number(parts[2]) : 0, co); used = 'logs'; cov.partial = co.partial; cov.blocks = co.blocks; }
+          } catch (e) { idx = null; cov.lastError = String(e.message || e).slice(0, 60); }
+        }
+        if (idx) { cov.source = used; cov.level = cov.partial ? 'partial' : 'full'; await processIndex(c, idx); }
+        else if (cov.lastError && !c.sources.every(function (x) { return x === 'es'; })) cov.level = 'error';
+        cov.needsKey = c.sources.indexOf('es') >= 0 && !ETH_KEY && cov.level !== 'full' && cov.level !== 'partial';
+        var list = KNOWN_NPMS[c.key] || []; for (var i = 0; i < list.length; i++) { try { var cnt = Number(BigInt(await call(c, list[i], SEL.balanceOf + wa(address)))); for (var k = 0; k < Math.min(cnt, 12) && !STOP; k++) { var tid = BigInt(await call(c, list[i], SEL.tokenOfOwnerByIndex + wa(address) + w(k))); await position(c, list[i], tid, t('lbl_pos')); } } catch (e) { /* manager absent */ } }
+      } catch (e) { cov.level = 'error'; cov.lastError = String(e.message || e).slice(0, 60); }
+      finally { if (st.coverage[c.key].level !== 'error') st.coverage[c.key] = cov; st.progress.push(c.key); onProgress(st); }
+    }
+    async function bitlayer() { var c = CHAIN.bitlayer, raw, delay; try { raw = await call(c, BITLAYER_REDEEM_ROUTER, SEL.getUserDelayedRedeems + wa(address)); delay = Number(BigInt(await call(c, BITLAYER_REDEEM_ROUTER, SEL.redeemDelay))); } catch (e) { return; } parseDelayedRedeems(raw).forEach(function (r) { var ready = r.createdAt + delay, amt = Number(r.amount) / 1e8; item({ chain: 'bitlayer', chain_name: c.name, kind: 'bitlayer_redeem', status: now() >= ready ? 'ready' : 'waiting', available_at: ready, label: t('lbl_bitlayer'), amount: amt.toFixed(8) + ' BTC', usd: usdBySymbol('BTC', amt, st.prices), note: t('note_bitlayer'), explorer: c.explorer + '/address/' + BITLAYER_REDEEM_ROUTER, action: { kind: 'bitlayer_claim' } }); }); }
+    async function wormhole() { var ops; try { var r = await fetch('https://api.wormholescan.io/api/v1/operations?address=' + address + '&page=0&pageSize=50', { signal: withTimeout(20000) }); ops = (await r.json()).operations || []; } catch (e) { return; } ops.forEach(function (o) { var tgt = o.targetChain || {}, src = o.sourceChain || {}; if (tgt.status === 'completed') return; var sp = (o.content && o.content.standarizedProperties) || {}, d = o.data || {}, apps = (sp.appIds || []).join(', ') || 'token bridge', amt = d.tokenAmount, sym = d.symbol || '', when = (src.timestamp || '').slice(0, 10), toChain = sp.toChain || '?'; var label = amt && sym ? 'Wormhole · ' + amt + ' ' + sym + ' → chain ' + toChain + ' ' + t('wh_transfer') : t('wh_msg') + ' (' + apps + ')'; var note = amt && sym ? when + ' · ' + String(sp.toAddress || '').slice(0, 20) + '… · ' + t('wh_note') : when + ' · ' + src.chainId + ' → ' + toChain + ' · ' + t('wh_note2'); item({ chain: 'wormhole', chain_name: 'Wormhole', kind: 'bridge', status: 'info', label: label, amount: ((amt || '—') + ' ' + sym).trim(), usd: d.usdAmount ? Number(d.usdAmount) : null, note: note, explorer: 'https://wormholescan.io/#/tx/' + ((src.transaction || {}).txHash || '') }); }); }
+    var ids = new Set(); CHAINS.forEach(function (c) { if (c.cg) ids.add(c.cg); }); Object.keys(SYM_TO_CG).forEach(function (k) { ids.add(SYM_TO_CG[k]); });
+    st.prices = await coingecko(ids); onProgress(st);
+    await Promise.all(CHAINS.map(native)); onProgress(st);
+    await Promise.all(CHAINS.map(chainScan));
+    if (!STOP) { await bitlayer(); await wormhole(); }
+    st.items.sort(function (a, b) { return (b.usd || 0) - (a.usd || 0); });
+    st.status = STOP ? 'stopped' : 'done'; st.updated = Date.now(); onProgress(st); return st;
+  }
+
+  // ============================================================ UI
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function usd(v) { return v == null ? '' : '$' + fnum(v, 2); }
+  function fmtTs(s) { return new Date(Number(s) * 1000).toLocaleString(LANG === 'tr' ? 'tr-TR' : 'en-US'); }
+  function hue(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h % 360; }
+  function chainCell(key, name) { return '<span class="chain"><i style="background:hsl(' + hue(key) + ' 60% 60%)"></i>' + esc(name) + '</span>'; }
+  function identicon(addr) { if (!/^0x[0-9a-f]{40}$/i.test(addr || '')) return ''; var h = addr.slice(2), cells = '', hb = hue(addr); for (var y = 0; y < 5; y++) for (var x = 0; x < 3; x++) { var on = parseInt(h[(y * 3 + x) % 40], 16) % 2 === 0; if (on) { cells += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>'; if (x < 2) cells += '<rect x="' + (4 - x) + '" y="' + y + '" width="1" height="1"/>'; } } return '<svg viewBox="0 0 5 5" width="26" height="26" shape-rendering="crispEdges" style="background:hsl(' + hb + ' 30% 18%)"><g fill="hsl(' + hb + ' 70% 65%)">' + cells + '</g></svg>'; }
+  function log(msg, cls) { var el = document.createElement('div'); el.className = cls || ''; el.textContent = new Date().toLocaleTimeString(LANG === 'tr' ? 'tr-TR' : 'en-US') + '  ' + msg; $('log').appendChild(el); $('log').scrollTop = 1e9; }
+  function addrInput() { return $('addr').value.trim().toLowerCase(); }
+  function applyLang() { document.documentElement.lang = LANG; Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (el) { el.innerHTML = t(el.getAttribute('data-i18n')); }); $('langTr').className = LANG === 'tr' ? 'on' : ''; $('langEn').className = LANG === 'en' ? 'on' : ''; if (STATE) render(STATE); else renderMatrix(null); }
+  function srcLabel(cov) { if (!cov || cov.level === 'pending') return ''; if (cov.level === 'error') return t('src_error'); if (cov.source === 'logs') return cov.partial ? t('src_logs_window', { n: fnum(cov.blocks || 0, 0) }) : t('src_logs'); if (cov.source === 'none') return t('src_none'); return t('src_' + cov.source); }
+  function covNote(c, cov) { if (!cov || cov.level === 'pending') return ''; if (cov.level === 'error') return t('cov_error'); if (cov.level === 'full') return t('cov_full', { src: srcLabel(cov) }); if (cov.level === 'partial') return t('cov_partial', { n: fnum(cov.blocks || 0, 0) }); return cov.needsKey ? t('cov_native_key') : t('cov_native_none'); }
+  function renderMatrix(st) { $('matrix').innerHTML = CHAINS.map(function (c) { var cov = st ? st.coverage[c.key] : null, lvl = cov ? cov.level : 'pending'; return '<div class="cell lvl-' + lvl + '" title="' + esc(covNote(c, cov)) + '"><i></i><b>' + esc(c.name) + '</b><span class="src">' + esc(srcLabel(cov)) + '</span></div>'; }).join(''); }
+  function skeleton(cols) { var r = ''; for (var i = 0; i < 3; i++) { r += '<tr class="skel">'; for (var j = 0; j < cols; j++) r += '<td><span style="width:' + (40 + ((i * 7 + j * 13) % 50)) + '%"></span></td>'; r += '</tr>'; } return r; }
+  function render(st) {
+    var total = CHAINS.length, done = st.progress.length, running = st.status === 'running';
+    $('barFill').style.width = (st.status === 'done' ? 100 : Math.min(98, Math.round(100 * done / total))) + '%';
+    $('statusDot').className = 'dot' + (running ? ' live' : '');
+    $('scanStatus').textContent = running ? (t('scanning') + ' · ' + done + '/' + total + ' ' + t('chains')) : (st.status === 'done' ? (t('done') + ' · ' + new Date(st.updated).toLocaleString(LANG === 'tr' ? 'tr-TR' : 'en-US') + ' · ' + st.items.length + ' ' + t('findings')) : t('stopped'));
+    var ready = st.items.filter(function (i) { return i.status === 'ready'; }), wait = st.items.filter(function (i) { return i.status === 'waiting'; }), info = st.items.filter(function (i) { return i.status === 'info'; }), tokens = st.items.filter(function (i) { return i.status === 'token'; });
+    var sum = function (arr) { var s = 0, unp = 0; arr.forEach(function (i) { if (i.usd == null) unp++; else s += i.usd; }); return { s: s, unp: unp }; };
+    var rs = sum(ready), ws = sum(wait), nat = st.natives.slice().sort(function (a, b) { return (b.usd || 0) - (a.usd || 0); }), ntot = 0; nat.forEach(function (x) { ntot += x.usd || 0; });
+    $('kpiReady').textContent = usd(rs.s) || '$0'; $('kpiReadyS').textContent = ready.length + ' ' + t('items') + (rs.unp ? ' · ' + rs.unp + ' ' + t('note_lp_unpriced').replace(/\.$/, '').toLowerCase() : '');
+    $('kpiWait').textContent = usd(ws.s) || '$0'; $('kpiWaitS').textContent = wait.length + ' ' + t('items');
+    $('kpiNative').textContent = usd(ntot) || '$0'; $('kpiNativeS').textContent = nat.filter(function (x) { return x.amount > 0; }).length + ' ' + t('chains');
+    var full = Object.keys(st.coverage).filter(function (k) { return st.coverage[k].level === 'full'; }).length, partial = Object.keys(st.coverage).filter(function (k) { return st.coverage[k].level === 'partial'; }).length;
+    $('kpiCov').textContent = full + (partial ? '+' + partial : '') + ' / ' + total; $('kpiCovS').textContent = t('full_cov');
+    function rowCommon(i) { return '<td>' + chainCell(i.chain, i.chain_name || i.chain) + '</td><td>' + esc(i.label) + (i.explorer ? ' <a class="ext" target="_blank" rel="noopener" href="' + esc(i.explorer) + '" title="' + esc(i.explorer.indexOf('/token') > 0 || i.explorer.indexOf('/address') > 0 ? 'explorer' : t('proto_link')) + '">↗</a>' : '') + '</td><td class="num">' + esc(i.amount) + '</td><td class="num">' + usd(i.usd) + '</td>'; }
+    function fill(bodyId, emptyId, rows, cols, emptyKey) { var body = $(bodyId), empty = $(emptyId); if (rows.length) { body.innerHTML = rows.join(''); empty.style.display = 'none'; } else if (running) { body.innerHTML = skeleton(cols); empty.style.display = 'none'; } else { body.innerHTML = ''; empty.textContent = t(emptyKey); empty.style.display = ''; } }
+    $('cntReady').textContent = ready.length; $('cntWait').textContent = wait.length; $('cntInfo').textContent = info.length; $('cntTokens').textContent = tokens.length; $('cntNative').textContent = nat.filter(function (x) { return x.amount > 0 || x.nonce > 0; }).length;
+    fill('readyBody', 'readyEmpty', ready.map(function (i) { return '<tr>' + rowCommon(i) + '<td class="note">' + esc(i.note) + '</td><td class="num">' + (i.action ? '<button class="btn primary sm" data-act="' + esc(i.id) + '">' + actionLabel(i.action.kind) + '</button>' : '') + '</td></tr>'; }), 6, 'none_ready');
+    fill('waitBody', 'waitEmpty', wait.map(function (i) { return '<tr>' + rowCommon(i) + '<td><span class="pill warn">' + (i.available_at ? fmtTs(i.available_at) + ' ' + t('after') : '') + '</span></td><td class="num"><button class="btn ghost sm" disabled>' + (i.action ? actionLabel(i.action.kind) : t('btn_withdraw')) + '</button></td></tr>'; }), 6, 'none_wait');
+    fill('infoBody', 'infoEmpty', info.map(function (i) { return '<tr>' + rowCommon(i) + '<td class="note">' + esc(i.note) + '</td></tr>'; }), 5, 'none_info');
+    fill('tokensBody', 'tokensEmpty', tokens.map(function (i) { return '<tr>' + rowCommon(i) + '</tr>'; }), 4, 'none_tokens');
+    var natRows = nat.filter(function (x) { return x.amount > 0 || x.nonce > 0; });
+    fill('nativeBody', 'nativeEmpty', natRows.map(function (x) { return '<tr><td>' + chainCell(x.chain, x.name) + '</td><td class="num">' + fnum(x.amount, 6) + ' ' + esc(x.sym) + '</td><td class="num">' + usd(x.usd) + '</td><td class="num">' + x.nonce + '</td></tr>'; }), 4, 'none_native');
+    $('nativeTotal').textContent = t('total_native') + ' ≈ ' + usd(ntot);
+    renderMatrix(st);
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-act]'), function (b) { b.addEventListener('click', function () { execute(b.getAttribute('data-act'), b); }); });
+  }
+  async function startScan() {
+    var a = addrInput(); if (!/^0x[0-9a-f]{40}$/.test(a)) { log(t('bad_addr'), 'bad'); return; }
+    try { localStorage.setItem('wrc_addr', a); } catch (e) { /* none */ }
+    $('ident').innerHTML = identicon(a);
+    STOP = false; $('btnScan').disabled = true; $('btnStop').disabled = false; $('log').innerHTML = ''; log(t('scanning') + ' · ' + a);
+    try { STATE = await runScan(a, function (st) { STATE = st; render(st); }); } catch (e) { log(t('err') + ': ' + (e.message || e), 'bad'); }
+    $('btnScan').disabled = false; $('btnStop').disabled = true;
+  }
+
+  // wallet (EIP-6963 discovery + legacy window.ethereum)
+  var PROVIDERS = [], PROVIDER = null, ADDR = null;
+  function currentProvider() { if (PROVIDER) return PROVIDER; var sel = $('walletSel'), p = PROVIDERS[Number(sel.value)]; return (p && p.provider) || window.ethereum || null; }
+  function refreshWalletSel() { var sel = $('walletSel'); sel.innerHTML = PROVIDERS.map(function (p, i) { return '<option value="' + i + '">' + esc(p.info.name) + '</option>'; }).join(''); sel.style.display = PROVIDERS.length > 1 ? '' : 'none'; }
+  try { window.addEventListener('eip6963:announceProvider', function (ev) { if (!PROVIDERS.some(function (p) { return p.info.uuid === ev.detail.info.uuid; })) { PROVIDERS.push(ev.detail); refreshWalletSel(); } }); window.dispatchEvent(new Event('eip6963:requestProvider')); } catch (e) { /* none */ }
+  async function connect() { var e = currentProvider(); if (!e) { log(t('no_wallet'), 'bad'); return; } try { var accs = await e.request({ method: 'eth_requestAccounts' }); PROVIDER = e; ADDR = accs && accs[0]; var ok = ADDR && ADDR.toLowerCase() === addrInput(); $('walletInfo').textContent = ADDR.slice(0, 6) + '…' + ADDR.slice(-4) + ' ' + (ok ? t('scanned_addr') : t('different')); $('walletInfo').style.color = ok ? 'var(--ok)' : 'var(--bad)'; log(t('connected') + ' · ' + ADDR, 'ok'); } catch (ex) { log(t('err') + ': ' + (ex.message || ex), 'bad'); } }
+  async function ensureChain(c) { var e = currentProvider(), cur = await e.request({ method: 'eth_chainId' }); if (parseInt(cur, 16) === c.id) return; try { await e.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: c.hex }] }); } catch (ex) { if (!(ex && (ex.code === 4902 || /4902|unrecognized|not added/i.test(String(ex.message || ex))))) throw ex; await e.request({ method: 'wallet_addEthereumChain', params: [{ chainId: c.hex, chainName: c.name, nativeCurrency: { name: c.sym, symbol: c.sym, decimals: 18 }, rpcUrls: c.rpc, blockExplorerUrls: [c.explorer] }] }); await e.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: c.hex }] }); } log(c.name + ' ' + t('switched')); }
+  async function waitReceipt(c, hash) { var started = Date.now(); while (Date.now() - started < 240000) { await sleep(4000); try { var rc = await rpc(c, 'eth_getTransactionReceipt', [hash]); if (rc) return rc; } catch (e) { /* retry */ } } return null; }
+  async function execute(itemId, btn) {
+    var e = currentProvider(); if (!e) { log(t('no_wallet'), 'bad'); return; }
+    if (!ADDR) await connect(); if (!ADDR || ADDR.toLowerCase() !== addrInput()) { log(t('wrong_wallet'), 'bad'); return; }
+    var it = STATE.items.filter(function (x) { return x.id === itemId; })[0]; if (!it) return; var c = CHAIN[it.chain]; if (!c) return;
+    btn.disabled = true;
+    try {
+      await ensureChain(c); var steps = buildSteps(it, ADDR);
+      for (var i = 0; i < steps.length; i++) {
+        var s = steps[i], pf = await preflight(c, s, ADDR);
+        if (!pf.ok) { log(t('preflight_fail', { reason: pf.reason }), 'bad'); btn.disabled = false; return; }
+        log(t('step') + ' ' + (i + 1) + '/' + steps.length + ' · ' + c.name + ' → ' + s.to.slice(0, 10) + '… · ' + t('approve'));
+        var txp = { from: ADDR, to: s.to, data: s.data, value: s.value }; if (pf.gas) txp.gas = pf.gas;
+        var hash = await e.request({ method: 'eth_sendTransaction', params: [txp] });
+        log(t('sent') + ' · ' + c.explorer + '/tx/' + hash, 'ok');
+        var rc = await waitReceipt(c, hash); if (!rc) { log(t('no_receipt'), 'warn'); return; } if (rc.status !== '0x1') { log(t('reverted'), 'bad'); return; } log(t('confirmed') + ' ' + parseInt(rc.blockNumber, 16), 'ok');
+      }
+      log(t('rescan'), 'ok'); setTimeout(startScan, 10000);
+    } catch (ex) { log((ex && ex.code === 4001) ? t('rejected') : (t('err') + ': ' + (ex.message || ex)), 'bad'); btn.disabled = false; }
+  }
+
+  window.__wrc = { runScan: runScan, classify: classify, decodePositions: decodePositions, parseDelayedRedeems: parseDelayedRedeems, buildClWithdraw: buildClWithdraw, buildLpBurn: buildLpBurn, buildRouterRemove: buildRouterRemove, buildSteps: buildSteps, CHAINS: CHAINS, setKey: function (k) { ETH_KEY = k || ''; } };
+  $('btnScan').addEventListener('click', startScan);
+  $('btnStop').addEventListener('click', function () { STOP = true; });
+  $('btnConnect').addEventListener('click', connect);
+  $('btnKeySave').addEventListener('click', function () { ETH_KEY = $('ethKey').value.trim(); try { if (ETH_KEY) localStorage.setItem('wrc_eskey', ETH_KEY); else localStorage.removeItem('wrc_eskey'); } catch (e) { /* none */ } log(ETH_KEY ? t('key_saved') : t('key_cleared'), 'ok'); });
+  $('langTr').addEventListener('click', function () { LANG = 'tr'; try { localStorage.setItem('wrc_lang', 'tr'); } catch (e) { /* none */ } applyLang(); });
+  $('langEn').addEventListener('click', function () { LANG = 'en'; try { localStorage.setItem('wrc_lang', 'en'); } catch (e) { /* none */ } applyLang(); });
+  $('addr').addEventListener('input', function () { $('ident').innerHTML = identicon(addrInput()); });
+  try { var saved = localStorage.getItem('wrc_addr'); if (saved) $('addr').value = saved; if (ETH_KEY) { $('ethKey').value = ETH_KEY; $('keyBox').open = true; } } catch (e) { /* none */ }
+  var qs = new URLSearchParams(location.search); if (/^0x[0-9a-fA-F]{40}$/.test(qs.get('address') || '')) $('addr').value = qs.get('address').toLowerCase();
+  $('ident').innerHTML = identicon(addrInput());
+  applyLang();
+})();
+</script>
+</body>
+</html>
