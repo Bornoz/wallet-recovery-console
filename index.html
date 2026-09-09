@@ -291,6 +291,8 @@
     '0xf1046053aa5682b4f9a81b5481394da16be5ff5a': { router: '0xa062ae8a9c5e11aaa026fc2670b0d65ccc8b2858', kind: 'solidly' }  // Velodrome V2 · Optimism
   };
   var GMX = { arbitrum: { router: '0xb95db5b167d75e6d04227cfffa61069348d271f5', out: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1' }, avalanche: { router: '0x82147c5a7e850ea4e28155df107f2590fd4ba327', out: '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7' } };
+  // DefiLlama price slugs (coins.llama.fi): batched, CORS-enabled, no per-IP quota like CoinGecko's public API.
+  var LLAMA = { ethereum: 'ethereum', base: 'base', arbitrum: 'arbitrum', optimism: 'optimism', polygon: 'polygon', zksync: 'era', linea: 'linea', scroll: 'scroll', mode: 'mode', manta: 'manta', soneium: 'soneium', lisk: 'lisk', celo: 'celo', ink: 'ink', metis: 'metis', gnosis: 'xdai', immutable: 'immutable', unichain: 'unichain', bsc: 'bsc', avalanche: 'avax', bitlayer: 'bitlayer', hyperevm: 'hyperliquid', opbnb: 'op_bnb', taiko: 'taiko', zora: 'zora', blast: 'blast', mantle: 'mantle', 'polygon-zkevm': 'polygon_zkevm', bob: 'bob', core: 'core', sonic: 'sonic', sei: 'sei', abstract: 'abstract', fraxtal: 'fraxtal', 'arbitrum-nova': 'arbitrum_nova', merlin: 'merlin', b2: 'bsquared' };
   var PROTO_LINKS = [[/^xGRAIL/i, 'https://app.camelot.exchange/xgrail'], [/^xKIM/i, 'https://app.kim.exchange'], [/^veMAV/i, 'https://app.mav.xyz'], [/^veKYO/i, 'https://kyo.finance'], [/GLP/i, 'https://app.gmx.io/#/earn'], [/DODO/i, 'https://app.dodoex.io/pool'], [/^LLP$/i, 'https://portal.lisk.com']];
   var BITLAYER_REDEEM_ROUTER = '0xe001ce855f9e964e5243f0ff11f2353dc371e810';
   var TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
@@ -341,8 +343,25 @@
   async function rpc(chain, method, params) { var last = 'no rpc'; for (var i = 0; i < chain.rpc.length; i++) { try { var r = await fetch(chain.rpc[i], { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params }), signal: withTimeout(15000) }); var j = await r.json(); if (j.error) { var e = new Error(String(j.error.message || JSON.stringify(j.error)).slice(0, 160)); e.rpcError = true; e.data = j.error.data; throw e; } return j.result; } catch (e) { last = e; if (e.rpcError) throw e; } } throw (last instanceof Error ? last : new Error(String(last))); }
   function call(chain, to, data, from) { var o = { to: to, data: data }; if (from) o.from = from; return rpcLimit(function () { return rpc(chain, 'eth_call', [o, 'latest']); }); }
   async function getJson(url, timeoutMs) { var lim = hostLimit(url); for (var attempt = 0; attempt < 3; attempt++) { try { var r = await lim(function () { return fetch(url, { headers: { accept: 'application/json' }, signal: withTimeout(timeoutMs || 30000) }); }); if (r.status === 200) return await r.json(); if (r.status === 404) return null; if (r.status !== 429 && r.status < 500) return null; } catch (e) { /* retry */ } if (attempt < 2) await sleep(1500 * Math.pow(2, attempt)); } throw new Error('unreachable'); }
-  async function coingecko(ids) { try { var r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + Array.from(ids).sort().join(',') + '&vs_currencies=usd', { signal: withTimeout(15000) }); var j = await r.json(); var out = {}; Object.keys(j).forEach(function (k) { if (j[k] && j[k].usd != null) out[k] = Number(j[k].usd); }); return out; } catch (e) { return {}; } }
-  async function coingeckoTokens(platform, addrs) { var out = {}; if (!platform || !addrs.length) return out; for (var i = 0; i < addrs.length; i += 80) { try { var r = await fetch('https://api.coingecko.com/api/v3/simple/token_price/' + platform + '?contract_addresses=' + addrs.slice(i, i + 80).join(',') + '&vs_currencies=usd', { signal: withTimeout(15000) }); var j = await r.json(); Object.keys(j).forEach(function (k) { if (j[k] && j[k].usd != null) out[k.toLowerCase()] = Number(j[k].usd); }); } catch (e) { /* unpriced */ } } return out; }
+  // Prices: DefiLlama (coins.llama.fi) is the primary source — batched by 100 keys, CORS-enabled, no per-IP quota.
+  // CoinGecko's public API (429 after ~30 requests/minute) is only a fallback for native coins.
+  var llamaSerial = limiter(1), priceQueue = [], priceTimer = null;
+  async function llama(keys) {
+    var out = {};
+    for (var i = 0; i < keys.length; i += 100) {
+      var chunk = keys.slice(i, i + 100);
+      await llamaSerial(async function () { try { var r = await fetch('https://coins.llama.fi/prices/current/' + chunk.join(','), { signal: withTimeout(15000) }); var j = await r.json(); var coins = (j && j.coins) || {}; Object.keys(coins).forEach(function (k) { if (coins[k] && coins[k].price != null) out[k.toLowerCase()] = Number(coins[k].price); }); } catch (e) { /* unpriced */ } await sleep(250); });
+    }
+    return out;
+  }
+  async function nativePrices(ids) {
+    var list = Array.from(ids), got = await llama(list.map(function (id) { return 'coingecko:' + id; })), out = {};
+    list.forEach(function (id) { if (got['coingecko:' + id] != null) out[id] = got['coingecko:' + id]; });
+    if (!Object.keys(out).length) { try { var r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + list.sort().join(',') + '&vs_currencies=usd', { signal: withTimeout(15000) }); var j = await r.json(); Object.keys(j || {}).forEach(function (k) { if (j[k] && j[k].usd != null) out[k] = Number(j[k].usd); }); } catch (e) { /* unpriced */ } }
+    return out;
+  }
+  function tokenPrice(slug, addr) { if (!slug) return Promise.resolve(null); var key = slug + ':' + addr.toLowerCase(); return new Promise(function (resolve) { priceQueue.push({ key: key, resolve: resolve }); if (!priceTimer) priceTimer = setTimeout(flushPrices, 1200); }); }
+  async function flushPrices() { priceTimer = null; var q = priceQueue; priceQueue = []; var got = await llama(q.map(function (x) { return x.key; })); q.forEach(function (x) { x.resolve(got[x.key] != null ? got[x.key] : null); }); }
   var AAVE_ERR = { 26: 'INVALID_AMOUNT', 27: 'RESERVE_INACTIVE', 28: 'RESERVE_FROZEN', 29: 'RESERVE_PAUSED', 32: 'NOT_ENOUGH_AVAILABLE_USER_BALANCE', 35: 'HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD', 36: 'COLLATERAL_CANNOT_BE_LIQUIDATED' };
   function revertReason(e) { var msg = String((e && e.message) || e || ''); var m = /execution reverted:?\s*(.*)$/i.exec(msg); var reason = m ? m[1].trim() : msg; var data = e && e.data; if (typeof data === 'string' && data.indexOf('0x08c379a0') === 0) { try { reason = decodeString('0x' + data.slice(10)) || reason; } catch (x) { /* keep */ } } if (/^\d{1,3}$/.test(reason) && AAVE_ERR[Number(reason)]) reason = 'Aave ' + reason + ' · ' + AAVE_ERR[Number(reason)]; return reason.slice(0, 120) || 'reverted'; }
   async function preflight(chain, step, from) { try { await rpcLimit(function () { return rpc(chain, 'eth_call', [{ from: from, to: step.to, data: step.data, value: step.value || '0x0' }, 'latest']); }); } catch (e) { return { ok: false, reason: revertReason(e) }; } var gas = null; try { gas = BigInt(await rpcLimit(function () { return rpc(chain, 'eth_estimateGas', [{ from: from, to: step.to, data: step.data, value: step.value || '0x0' }]); })); } catch (e) { gas = null; } return { ok: true, gas: gas ? '0x' + (gas * 13n / 10n).toString(16) : null }; }
@@ -407,13 +426,29 @@
       }
       item(o);
     }
-    async function tokenUsd(c, token, sym, amount, rateHint) {
-      var key = c.key + ':' + token.toLowerCase();
+    function bsBase(c) { return (c.sources.filter(function (s) { return s.indexOf('bs:') === 0; })[0] || '').slice(3); }
+    // Every discovered contract on a chain is priced in one batched DefiLlama request before the token loop starts.
+    async function prefetchPrices(c, addrs) {
+      var slug = LLAMA[c.key]; if (!slug) return;
+      var need = addrs.map(function (a) { return a.toLowerCase(); }).filter(function (a) { return !((c.key + ':' + a) in rateCache); });
+      if (!need.length) return;
+      var got = await llama(need.map(function (a) { return slug + ':' + a; }));
+      need.forEach(function (a) { var v = got[slug + ':' + a]; rateCache[c.key + ':' + a] = v != null ? v : null; });
+    }
+    // Price by contract address (index rate → DefiLlama → Blockscout token page). The symbol map is a last resort only
+    // where no address-keyed source exists, so a token merely named "USDC" is never priced by its name.
+    async function tokenUsd(c, token, sym, amount, rateHint, important) {
+      var key = c.key + ':' + token.toLowerCase(), bs = bsBase(c), slug = LLAMA[c.key];
       if (rateHint != null) rateCache[key] = rateHint;
-      if (!(key in rateCache)) { var bs = (c.sources.filter(function (s) { return s.indexOf('bs:') === 0; })[0] || '').slice(3), rate = null; if (bs) { try { var j = await getJson(bs + '/api/v2/tokens/' + token); rate = j && j.exchange_rate ? Number(j.exchange_rate) : null; } catch (e) { rate = null; } } if (rate == null) { var cgp = await coingeckoTokens(c.cgPlatform, [token]); rate = cgp[token.toLowerCase()] != null ? cgp[token.toLowerCase()] : null; } rateCache[key] = rate; }
+      if (!(key in rateCache) || (rateCache[key] == null && important !== false && !rateCache[key + ':checked'])) {
+        var rate = rateCache[key] != null ? rateCache[key] : null;
+        if (rate == null && slug) rate = await tokenPrice(slug, token);
+        if (rate == null && bs && important !== false) { try { var j = await getJson(bs + '/api/v2/tokens/' + token); rate = j && j.exchange_rate ? Number(j.exchange_rate) : null; } catch (e) { rate = null; } }
+        rateCache[key] = rate; rateCache[key + ':checked'] = true;
+      }
       if (rateCache[key] != null) return amount * rateCache[key];
-      if (STABLE[(sym || '').toUpperCase()] && c.sources.some(function (s) { return s.indexOf('bs:') === 0; })) return null;
-      return usdBySymbol(sym, amount, st.prices);
+      if (bs || STABLE[(sym || '').toUpperCase()]) return null; // an index exists but has no price, or a stablecoin name without an address price
+      return usdBySymbol(sym, amount, st.prices); // blue-chip symbols only, on chains without a token index
     }
     async function native(c) { try { var b = await rpc(c, 'eth_getBalance', [address, 'latest']), nc = await rpc(c, 'eth_getTransactionCount', [address, 'latest']), amt = Number(BigInt(b)) / 1e18; st.natives.push({ chain: c.key, name: c.name, sym: c.sym, amount: amt, nonce: Number(BigInt(nc)), usd: st.prices[c.cg] != null ? amt * st.prices[c.cg] : null }); } catch (e) { st.coverage[c.key] = { level: 'error', source: 'rpc' }; } }
     async function position(c, npm, tid, label) {
@@ -483,6 +518,7 @@
         else if (kind === 've_nft') await veLock(c, nf.address, BigInt(nf.id), meta);
       }
       var list = idx.erc20.slice(0, MAX_CONTRACTS);
+      await prefetchPrices(c, list.map(function (x) { return x.address; }));
       for (var j = 0; j < list.length && !STOP; j++) {
         var tk = list[j], bal = tk.balance;
         if (bal === undefined) { try { bal = BigInt(await call(c, tk.address, SEL.balanceOf + wa(address))); } catch (e) { continue; } }
@@ -494,7 +530,7 @@
         if (kind2 === 'lp') { await lp(c, tk.address, bal, meta2.sym || 'LP', meta2.name || ''); continue; }
         if (kind2 === 'escrow') { if (await xToken(c, tk.address, bal, meta2)) continue; item({ chain: c.key, chain_name: c.name, kind: 'escrow', status: 'info', label: meta2.sym + ' · ' + meta2.name, amount: fmtAmt(bal, meta2.dec) + ' ' + meta2.sym, usd: usd, note: t('note_escrow'), explorer: protoLink(meta2.sym, meta2.name) || (c.explorer + '/address/' + tk.address) }); continue; }
         var handled = await receipt(c, tk.address, bal, meta2.sym || '?');
-        if (!handled) { if (usd == null) usd = await tokenUsd(c, tk.address, meta2.sym, Number(bal) / Math.pow(10, meta2.dec)); if (usd != null && usd >= 1) item({ chain: c.key, chain_name: c.name, kind: 'token', status: 'token', label: meta2.sym + ' · ' + meta2.name, amount: fmtAmt(bal, meta2.dec) + ' ' + meta2.sym, usd: usd, note: t('note_token'), explorer: c.explorer + '/token/' + tk.address + '?a=' + address }); }
+        if (!handled) { if (usd == null) usd = await tokenUsd(c, tk.address, meta2.sym, Number(bal) / Math.pow(10, meta2.dec), null, false); if (usd != null && usd >= 1) item({ chain: c.key, chain_name: c.name, kind: 'token', status: 'token', label: meta2.sym + ' · ' + meta2.name, amount: fmtAmt(bal, meta2.dec) + ' ' + meta2.sym, usd: usd, note: t('note_token'), explorer: c.explorer + '/token/' + tk.address + '?a=' + address }); }
       }
     }
     async function chainScan(c) {
@@ -521,7 +557,7 @@
     async function bitlayer() { var c = CHAIN.bitlayer, raw, delay; try { raw = await call(c, BITLAYER_REDEEM_ROUTER, SEL.getUserDelayedRedeems + wa(address)); delay = Number(BigInt(await call(c, BITLAYER_REDEEM_ROUTER, SEL.redeemDelay))); } catch (e) { return; } parseDelayedRedeems(raw).forEach(function (r) { var ready = r.createdAt + delay, amt = Number(r.amount) / 1e8; item({ chain: 'bitlayer', chain_name: c.name, kind: 'bitlayer_redeem', status: now() >= ready ? 'ready' : 'waiting', available_at: ready, label: t('lbl_bitlayer'), amount: amt.toFixed(8) + ' BTC', usd: usdBySymbol('BTC', amt, st.prices), note: t('note_bitlayer'), explorer: c.explorer + '/address/' + BITLAYER_REDEEM_ROUTER, action: { kind: 'bitlayer_claim' } }); }); }
     async function wormhole() { var ops; try { var r = await fetch('https://api.wormholescan.io/api/v1/operations?address=' + address + '&page=0&pageSize=50', { signal: withTimeout(20000) }); ops = (await r.json()).operations || []; } catch (e) { return; } ops.forEach(function (o) { var tgt = o.targetChain || {}, src = o.sourceChain || {}; if (tgt.status === 'completed') return; var sp = (o.content && o.content.standarizedProperties) || {}, d = o.data || {}, apps = (sp.appIds || []).join(', ') || 'token bridge', amt = d.tokenAmount, sym = d.symbol || '', when = (src.timestamp || '').slice(0, 10), toChain = sp.toChain || '?'; var label = amt && sym ? 'Wormhole · ' + amt + ' ' + sym + ' → chain ' + toChain + ' ' + t('wh_transfer') : t('wh_msg') + ' (' + apps + ')'; var note = amt && sym ? when + ' · ' + String(sp.toAddress || '').slice(0, 20) + '… · ' + t('wh_note') : when + ' · ' + src.chainId + ' → ' + toChain + ' · ' + t('wh_note2'); item({ chain: 'wormhole', chain_name: 'Wormhole', kind: 'bridge', status: 'info', label: label, amount: ((amt || '—') + ' ' + sym).trim(), usd: d.usdAmount ? Number(d.usdAmount) : null, note: note, explorer: 'https://wormholescan.io/#/tx/' + ((src.transaction || {}).txHash || '') }); }); }
     var ids = new Set(); CHAINS.forEach(function (c) { if (c.cg) ids.add(c.cg); }); Object.keys(SYM_TO_CG).forEach(function (k) { ids.add(SYM_TO_CG[k]); });
-    st.prices = await coingecko(ids); onProgress(st);
+    st.prices = await nativePrices(ids); onProgress(st);
     await Promise.all(CHAINS.map(native)); onProgress(st);
     await Promise.all(CHAINS.map(chainScan));
     if (!STOP) { await bitlayer(); await wormhole(); }
