@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Wallet Recovery Console: 37 EVM ağında ve Starknet'te unutulmuş likidite, mevduat, kilit ve alınmamış köprü transferlerini bulur; çekilebilenleri tek tıkla çektirir. Sunucusuz, anahtarsız, açık kaynak.">
+<meta name="description" content="Wallet Recovery Console: 37 EVM ağında, Starknet ve Solana'da unutulmuş likidite, mevduat, kilit, yarım kalmış köprü transferi ve token onaylarını bulur; çekilebilenleri tek tıkla çektirir. Sunucusuz, anahtarsız, açık kaynak.">
 <meta name="theme-color" content="#0b0e14">
 <title>Wallet Recovery Console</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f2c76a'/%3E%3Cstop offset='1' stop-color='%23b9862c'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M14 20l7 24 7-16 7 16 7-24' fill='none' stroke='%231b1403' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='16' r='4' fill='%231b1403'/%3E%3C/svg%3E">
@@ -88,6 +88,8 @@
   .note { color: var(--muted); font-size: 12.5px; }
   .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
   .pill.warn { background: rgba(245,185,80,.14); color: var(--warn); }
+  .pill.ok { background: rgba(61,220,151,.14); color: var(--ok); }
+  .dim { color: var(--faint); }
   .go { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px 0 13px; margin-left: 10px; border-radius: 8px; background: linear-gradient(135deg, var(--gold-2), var(--gold)); color: var(--gold-ink); font: 700 12px/1 var(--font); letter-spacing: .1em; vertical-align: middle; white-space: nowrap; box-shadow: 0 0 0 1px rgba(242,199,106,.4), 0 6px 18px rgba(228,176,74,.32); animation: glow 1.8s ease-in-out infinite; transition: transform .08s, filter .15s; }
   .go span { font-size: 15px; line-height: 1; }
   .go:hover { text-decoration: none; filter: brightness(1.1); transform: translateY(-1px); animation: none; box-shadow: 0 0 0 2px rgba(242,199,106,.7), 0 10px 30px rgba(228,176,74,.6); }
@@ -117,9 +119,9 @@
 
   <div class="hero">
     <h2 data-i18n="hero_title">Ağlarda unuttuğun varlıkları bul, tek tıkla geri al.</h2>
-    <p data-i18n="hero_text">37 EVM ağı ve Starknet taranır: likidite pozisyonları, mevduatlar, kilitler, vesting'ler, alınmamış köprü transferleri. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.</p>
+    <p data-i18n="hero_text">37 EVM ağı, Starknet ve Solana taranır: likidite pozisyonları, mevduatlar, kilitler, vesting'ler, yarım kalmış köprü transferleri, unutulmuş token onayları. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.</p>
     <div class="addr-row">
-      <div class="addr-wrap"><div class="ident" id="ident"></div><input id="addr" placeholder="0x…" spellcheck="false" autocomplete="off"></div>
+      <div class="addr-wrap"><div class="ident" id="ident"></div><input id="addr" placeholder="0x… / isim.eth" spellcheck="false" autocomplete="off"></div>
       <button id="btnScan" class="btn primary" data-i18n="btn_scan">Tara</button>
       <button id="btnStop" class="btn ghost" disabled data-i18n="btn_stop">Durdur</button>
       <button id="btnConnect" class="btn ghost" data-i18n="btn_connect">Cüzdanı bağla</button>
@@ -127,6 +129,7 @@
     <div class="meta">
       <select id="walletSel" class="btn ghost sm" style="display:none"></select>
       <span id="walletInfo" data-i18n="wallet_none">cüzdan bağlı değil</span>
+      <span style="margin-left:auto;display:inline-flex;gap:8px"><button id="btnCsv" class="btn ghost sm" title="CSV">CSV ↓</button><button id="btnJson" class="btn ghost sm" title="JSON">JSON ↓</button></span>
     </div>
     <details id="keyBox">
       <summary data-i18n="key_summary">Etherscan API anahtarı: ortak ücretsiz anahtar hazır gelir (opBNB, HyperEVM, Taiko, Sei); sınırına takılırsa kendi ücretsiz anahtarını buraya gir</summary>
@@ -163,6 +166,9 @@
   <section class="card"><header><h3><span data-i18n="h_native">Yerli coinler</span> <span class="count" id="cntNative">0</span></h3><span class="sub" id="nativeTotal"></span></header>
     <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th class="num" data-i18n="th_balance">Bakiye</th><th class="num">≈ USD</th><th class="num" data-i18n="th_txs">İşlem</th></tr></thead><tbody id="nativeBody"></tbody></table><div id="nativeEmpty" class="empty"></div></div></section>
 
+  <section class="card" id="apprCard"><header><h3><span data-i18n="h_appr">Token onayları</span> <span class="count" id="cntAppr">0</span></h3><span class="sub"><span id="apprStatus"></span> <button id="btnApprScan" class="btn ghost sm" disabled data-i18n="btn_appr_scan">Onayları tara</button></span></header>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th data-i18n="th_spender">Harcayıcı</th><th class="num" data-i18n="th_allowance">İzin</th><th class="num" data-i18n="th_held">Cüzdanda</th><th></th></tr></thead><tbody id="apprBody"></tbody></table><div id="apprEmpty" class="empty"></div></div></section>
+
   <section class="card" id="consCard"><header><h3><span data-i18n="h_cons">Tek ağda topla</span> <span class="count" id="cntCons">0</span></h3><span class="sub" data-i18n="h_cons_sub">Bakiyeleri seçtiğin ağa ve tokena köprüler (LI.FI); her adım önce simüle edilir</span></header>
     <div class="matrix" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
       <label class="cell" style="gap:8px"><span data-i18n="cons_dest">Hedef ağ</span><select id="consChain" class="btn ghost sm" style="margin-left:auto"></select></label>
@@ -175,10 +181,19 @@
 
   <section class="card" id="snCard"><header><h3><span data-i18n="h_sn">Starknet</span> <span class="count" id="cntSn">0</span></h3><span class="sub" data-i18n="h_sn_sub">JediSwap v2 pozisyonları ve STRK staking; Braavos ya da Ready X ile imza</span></header>
     <div class="matrix" style="grid-template-columns:1fr">
-      <div class="addr-row"><div class="addr-wrap"><div class="ident" id="snIdent"></div><input id="snAddr" placeholder="0x… (Starknet)" spellcheck="false" autocomplete="off"></div><button id="btnSnScan" class="btn primary sm" style="height:48px" data-i18n="btn_scan">Tara</button><button id="btnSnConnect" class="btn ghost sm" style="height:48px" data-i18n="btn_sn_connect">Starknet cüzdanını bağla</button><span id="snWalletInfo" class="dim" data-i18n="wallet_none">cüzdan bağlı değil</span></div>
+      <div class="addr-row"><div class="addr-wrap"><div class="ident" id="snIdent"></div><input id="snAddr" placeholder="0x… / isim.stark" spellcheck="false" autocomplete="off"></div><button id="btnSnScan" class="btn primary sm" style="height:48px" data-i18n="btn_scan">Tara</button><button id="btnSnConnect" class="btn ghost sm" style="height:48px" data-i18n="btn_sn_connect">Starknet cüzdanını bağla</button><span id="snWalletInfo" class="dim" data-i18n="wallet_none">cüzdan bağlı değil</span></div>
       <div id="snStatus" class="dim" data-i18n="sn_idle">Adres gir ve taramayı başlat. İlk tarama 3-5 dakika sürer (737 staking havuzu ve pozisyon geçmişi zincirden okunur).</div>
     </div>
     <div class="wrap"><table><thead><tr><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_note">Açıklama</th><th></th></tr></thead><tbody id="snBody"></tbody></table><div id="snEmpty" class="empty"></div></div>
+  </section>
+
+  <section class="card" id="solCard"><header><h3><span data-i18n="h_sol">Solana</span> <span class="count" id="cntSol">0</span></h3><span class="sub" data-i18n="h_sol_sub">Boş kalmış token hesaplarının kirasını geri al; Phantom, Solflare, Backpack</span></header>
+    <div class="matrix" style="grid-template-columns:1fr">
+      <div class="addr-row"><div class="addr-wrap"><input id="solAddr" placeholder="Solana adresi" spellcheck="false" autocomplete="off" style="padding-left:14px"></div><button id="btnSolScan" class="btn primary sm" style="height:48px" data-i18n="btn_scan">Tara</button><button id="btnSolConnect" class="btn ghost sm" style="height:48px" data-i18n="btn_sol_connect">Solana cüzdanını bağla</button><span id="solWalletInfo" class="dim" data-i18n="wallet_none">cüzdan bağlı değil</span></div>
+      <div id="solStatus" class="dim" data-i18n="sol_idle">Solana adresi gir ve tara.</div>
+      <details><summary class="dim" data-i18n="sol_rpc_label">Solana RPC (isteğe bağlı)</summary><div class="keyrow"><input id="solRpc" placeholder="https://…" spellcheck="false" autocomplete="off"><button id="btnSolRpcSave" class="btn ghost sm" data-i18n="btn_key_save">Kaydet</button><span class="hint" data-i18n="sol_rpc_hint">Solana’nın herkese açık RPC’leri tarayıcıdan hesap listelemeyi çoğu zaman reddeder (403). Kendi RPC adresini gir; Helius ücretsiz planı yeterli, adres yalnız bu tarayıcıda kalır.</span></div></details>
+    </div>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_note">Açıklama</th><th></th></tr></thead><tbody id="solBody"></tbody></table><div id="solEmpty" class="empty"></div></div>
   </section>
 
   <section class="card"><header><h3><span data-i18n="h_cov">Kapsam matrisi</span> <span class="count" id="cntCov">37</span></h3><span class="sub" data-i18n="h_cov_sub">Her ağ için kullanılan veri kaynağı ve kapsam düzeyi</span></header>
@@ -203,14 +218,14 @@
     tr: {
       tagline: 'Sunucusuz · anahtarsız · açık kaynak',
       hero_title: 'Ağlarda unuttuğun varlıkları bul, tek tıkla geri al.',
-      hero_text: '37 EVM ağı ve Starknet taranır: likidite pozisyonları, mevduatlar, kilitler, vesting’ler, alınmamış köprü transferleri. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.',
+      hero_text: '37 EVM ağı, Starknet ve Solana taranır: likidite pozisyonları, mevduatlar, kilitler, vesting’ler, yarım kalmış köprü transferleri, unutulmuş token onayları. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.',
       btn_scan: 'Tara', btn_stop: 'Durdur', btn_connect: 'Cüzdanı bağla', wallet_none: 'cüzdan bağlı değil', status_idle: 'Adres gir ve taramayı başlat.',
-      key_summary: 'Etherscan API anahtarı: ortak ücretsiz anahtar hazır gelir (opBNB, HyperEVM, Taiko, Sei); sınırına takılırsa kendi ücretsiz anahtarını buraya gir', btn_key_save: 'Kaydet', key_link: 'Ücretsiz anahtar al ↗', key_hint: 'Anahtar yalnız bu tarayıcıda (localStorage) tutulur ve doğrudan Etherscan API’sine gider; başka hiçbir yere gönderilmez.', es_shared_limit: 'Ortak Etherscan anahtarı sınırına takıldı; kendi ücretsiz anahtarını girersen bu ağlar tam kapsama girer.',
+      key_summary: 'Etherscan API anahtarı: ortak ücretsiz anahtar hazır gelir (opBNB, HyperEVM, Taiko, Sei); sınırına takılırsa kendi ücretsiz anahtarını buraya gir', h_appr: 'Token onayları', btn_appr_scan: 'Onayları tara', appr_idle: 'Ana tarama bitince onaylar otomatik taranır.', appr_hint: 'Önce ana taramayı bitir.', appr_done: 'Harcayıcı keşfi: {full} ağda tam geçmiş, {win} ağda son bloklar, {none} ağda yalnız bilinen harcayıcılar.', appr_log: '{n} aktif token onayı bulundu, {u} tanesi sınırsız.', unlimited: 'Sınırsız', btn_revoke: 'İptal et', revoked: 'Onay iptal edildi', revoke_partial: 'İzin hâlâ sıfır değil; token iki adımlı iptal istiyor olabilir, yeniden dene.', th_spender: 'Harcayıcı', th_allowance: 'İzin', th_held: 'Cüzdanda', none_appr: 'Aktif token onayı yok.', appr_more: 'Kalan {n} onayı göster (sınırsız ve bakiyeli olanlar üstte)', export_empty: 'Dışa aktarılacak bulgu yok.', exported: 'Dışa aktarıldı', hist_diff: 'Önceki taramaya göre ({when}): {fresh} yeni bulgu, {gone} kaybolan.', pill_new: 'yeni', lz_note_failed: 'Mesaj hedef ağda başarısız ya da engellendi; LayerZero Scan sayfasındaki Retry / Clear ile yeniden denenir.', lz_note_stored: 'Yük hedef ağda saklandı ama teslim edilmedi; LayerZero Scan sayfasından Retry.', lz_note_inflight: 'Bir saatten uzun süredir yolda; durumu LayerZero Scan sayfasından izle.', across_expired: 'Süresi doldu; Across iadeyi kaynak ağa yapar, işlem sayfasından kontrol et.', across_pending: 'Henüz doldurulmadı; Across işlem sayfasından izle.', name_none: '{name} bir adrese çözülemedi.', name_chars: 'Ad desteklenmeyen karakter içeriyor.', resolving: 'Ad çözülüyor', resolved: 'Ad çözüldü', h_sol: 'Solana', h_sol_sub: 'Boş kalmış token hesaplarının kirasını geri al; Phantom, Solflare, Backpack', sol_idle: 'Solana adresi gir ve tara.', sol_done: 'Bakiye {bal} SOL · {n} boş token hesabı · geri alınabilir {sol} SOL ({usd}) · {held} dolu hesap', sol_none: 'Boş token hesabı yok.', sol_empty_accounts: '{n} boş token hesabı (kira kilidi)', sol_note_close: 'closeAccount; hesap başına ≈0,002 SOL cüzdana döner. İşlem başına 25 hesap, her işlem önce simüle edilir; cüzdan her işlemi ayrı onaylatır.', btn_sol_close: 'Kapat ve SOL al', btn_sol_connect: 'Solana cüzdanını bağla', sol_no_wallet: 'Solana cüzdanı bulunamadı (Phantom, Solflare, Backpack).', sol_bad_addr: 'Geçersiz Solana adresi.', sol_rpc_hint: 'Solana’nın herkese açık RPC’leri tarayıcıdan hesap listelemeyi çoğu zaman reddeder (403). Kendi RPC adresini gir; Helius ücretsiz planı yeterli, adres yalnız bu tarayıcıda kalır.', sol_rpc_label: 'Solana RPC (isteğe bağlı)', sol_closing: '{n} hesap kapatılıyor; cüzdanında onayla.', btn_key_save: 'Kaydet',key_link: 'Ücretsiz anahtar al ↗', key_hint: 'Anahtar yalnız bu tarayıcıda (localStorage) tutulur ve doğrudan Etherscan API’sine gider; başka hiçbir yere gönderilmez.', es_shared_limit: 'Ortak Etherscan anahtarı sınırına takıldı; kendi ücretsiz anahtarını girersen bu ağlar tam kapsama girer.',
       kpi_ready: 'Şimdi çekilebilir', kpi_wait: 'Bekleyen', kpi_native: 'Yerli coin bakiyesi', kpi_cov: 'Kapsam',
       h_ready: 'Çekilebilir', h_ready_sub: 'Tek tıkla; önce simüle edilir, sonra her işlemi cüzdanında onaylarsın', h_wait: 'Bekleyen', h_wait_sub: 'Kilit ya da vesting süresi dolunca çekilebilir', h_info: 'Elle işlem', h_info_sub: 'Protokole özgü akış gerektirir; bağlantı doğrudan protokol arayüzüne gider', h_tokens: 'Tokenlar', h_tokens_sub: 'Cüzdanda duran, doğrudan takas edilebilir bakiyeler (≥ $1)', h_native: 'Yerli coinler', h_cov: 'Kapsam matrisi', h_cov_sub: 'Her ağ için kullanılan veri kaynağı ve kapsam düzeyi', h_log: 'Etkinlik',
       th_chain: 'Ağ', th_what: 'Varlık', th_amount: 'Miktar', th_note: 'Açıklama', th_when: 'Açılış', th_balance: 'Bakiye', th_txs: 'İşlem',
       lg_full: 'Tam: token ve NFT dizini okundu', lg_partial: 'Kısmi: sınırlı blok aralığı', lg_native: 'Yalnız yerli bakiye', lg_error: 'Kaynak cevap vermedi',
-      foot_a: 'Güvenlik.', foot1: 'Sayfa gizli anahtar, seed ya da imza istemez; yalnız imzasız işlem (to / data / value) hazırlar ve cüzdan uzantın gösterir. Her işlem gönderilmeden önce cüzdan adına simüle edilir; geri dönecek işlem gönderilmez. Tüm istekler doğrudan herkese açık RPC, Blockscout, Routescan, BTRScan, Etherscan, CoinGecko ve Wormholescan uçlarına gider.', foot_b: 'Sorumluluk.', foot2: 'Yatırım tavsiyesi değildir. Miktarlar simülasyon ve zincir okumasıdır; işlem anında değişebilir, gaz ücretleri size aittir.', foot3: 'Açık kaynak · MIT ·',
+      foot_a: 'Güvenlik.', foot1: 'Sayfa gizli anahtar, seed ya da imza istemez; yalnız imzasız işlem (to / data / value) hazırlar ve cüzdan uzantın gösterir. Her işlem gönderilmeden önce cüzdan adına simüle edilir; geri dönecek işlem gönderilmez. Tüm istekler doğrudan herkese açık RPC, Blockscout, Routescan, BTRScan, Etherscan, DefiLlama, LI.FI, Wormholescan, LayerZero Scan ve Across uçlarına gider.', foot_b: 'Sorumluluk.', foot2: 'Yatırım tavsiyesi değildir. Miktarlar simülasyon ve zincir okumasıdır; işlem anında değişebilir, gaz ücretleri size aittir.', foot3: 'Açık kaynak · MIT ·',
       bad_addr: 'Geçersiz adres: 0x ile başlayan 40 haneli hex bekleniyor.', scanning: 'Taranıyor', chains: 'ağ', done: 'Tarama tamamlandı', findings: 'bulgu', stopped: 'Tarama durduruldu', none_ready: 'Şu an tek tıkla çekilebilir bir varlık bulunmadı.', none_wait: 'Bekleyen kilit ya da vesting yok.', none_info: 'Elle işlem gerektiren varlık yok.', none_tokens: 'Bakiye yok.', none_native: 'Bakiye yok.', pending: 'Tarama bitince dolacak.',
       items: 'kalem', full_cov: 'tam kapsam', key_saved: 'Etherscan anahtarı kaydedildi', key_cleared: 'Etherscan anahtarı silindi',
       btn_withdraw: 'Çek', btn_unlock: 'Kilidi aç', btn_claim: 'Al', btn_vest: 'Vesting başlat', btn_go: 'GİT', proto_link: 'protokol arayüzü', after: 'sonrası', total_native: 'toplam', no_wallet: 'EVM cüzdanı (MetaMask, Rabby vb.) bulunamadı.', connected: 'Cüzdan bağlandı', wrong_wallet: 'Bağlı cüzdan taranan adres değil; işlem gönderilmedi.', different: '· taranan adresten farklı', scanned_addr: '· taranan adres',
@@ -221,21 +236,21 @@
       note_escrow: 'Kilit/escrow tokenı: vesting ya da kilit süresi protokol arayüzünde çözülür.', note_token: 'Standart token; cüzdanda görünür.', note_aave: 'withdraw(asset, max, owner). Açık borç varsa kısmen çekilir.', note_ctoken: 'redeem(balance). Havuz likiditesi yoksa geri döner.', note_bitlayer: 'claimDelayedRedeems(). Süre dolmadan çağrı geri döner; kayıp olmaz.', lbl_bitlayer: 'Bedrock uniBTC gecikmeli geri alım → BTC', lbl_aave: 'Aave-tipi mevduat', lbl_ctoken: 'Compound-tipi mevduat', lbl_pos: 'Konsantre likidite pozisyonu', lbl_lp: 'likiditesi',
       lbl_velock: 'oy kilidi (ve-NFT)', note_velock_ready: 'Kilit süresi doldu; withdraw(tokenId) ile kilitli miktar cüzdana döner.', note_velock_wait: 'Kilit süresi dolmadı; süre bitince “Kilidi aç” açılır.', lbl_xtoken_pending: 'vesting', note_xtoken_ready: 'Vesting bitti; finalizeRedeem ile alınır.', note_xtoken_wait: 'Vesting sürüyor.', note_xtoken_start: 'Vesting başlatır: {days} gün sonra alınır; en kısa süre en düşük dönüşüm oranını verir. Daha yüksek oran için protokol arayüzünde daha uzun süre seçin.', lbl_glp: 'GMX GLP (stake)', note_glp: 'unstakeAndRedeemGlp: GLP çözülür ve wrapped yerli coine çevrilir.',
       note_blocked: 'Çekim şu an mümkün değil, simülasyon geri döndü: {reason}. Protokol rezervi durdurmuş ya da dondurmuş olabilir; açılınca yeniden tarayın.', preflight_fail: 'Gönderilmedi: ön simülasyon geri döndü ({reason}). Gaz harcanmadı.',
-      wh_transfer: 'hedef zincirde alınmamış', wh_msg: 'Wormhole mesajı hedefte tamamlanmamış görünüyor', wh_note: 'Portal Bridge “Redeem” ile hedef cüzdandan alınır.', wh_note2: 'Takas ya da mesaj olabilir; tutar bilinmiyor, bağlantıdan inceleyin.',
+      wh_transfer: 'hedef zincirde alınmamış', wh_msg: 'Wormhole mesajı hedefte tamamlanmamış görünüyor', wh_note: 'VAA imzalı, hedef ağda alınmamış. Portal Bridge’de “Resume transaction / Redeem”: kaynak ağ {from}, işlem {hash}; hedef cüzdanı ({to}) bağla ve Redeem’e bas. Doğrulama: wormholescan.io/#/tx/{hash}', wh_note2: 'Takas ya da mesaj olabilir; tutar bilinmiyor. İşlem {hash}; ayrıntı için Wormholescan sayfasına git.',
       h_cons: 'Tek ağda topla', h_cons_sub: 'Bakiyeleri seçtiğin ağa ve tokena köprüler (LI.FI); her adım önce simüle edilir', cons_dest: 'Hedef ağ', cons_token: 'Hedef varlık', cons_min: 'Alt sınır (USD)', btn_cons_plan: 'Planı hesapla', btn_cons_all: 'Hepsini gönder', cons_receive: 'Alınacak', cons_cost: 'Gaz + ücret', cons_route: 'Rota', cons_empty: 'Önce taramayı bitir, sonra hedefi seçip planı hesapla.', cons_none: 'Alt sınırın üstünde, hedef dışında bakiye yok.', cons_quoting: 'Teklifler alınıyor', cons_nogas: 'kaynak ağda gaz için yerli coin yok', cons_noroute: 'rota bulunamadı', cons_send: 'Gönder', cons_sent: 'köprüye verildi; varış birkaç dakika sürer', cons_approve: 'onay (approve)', cons_net: 'net', cons_plan_done: 'Plan hazır: {n} kaynak, toplam ≈ {usd} → hedefte ≈ {to}',
       h_sn: 'Starknet', h_sn_sub: 'JediSwap v2 pozisyonları ve STRK staking; Braavos ya da Ready X ile imza', btn_sn_connect: 'Starknet cüzdanını bağla', sn_idle: 'Adres gir ve taramayı başlat. İlk tarama 3-5 dakika sürer (737 staking havuzu ve pozisyon geçmişi zincirden okunur).', sn_bad_addr: 'Geçersiz Starknet adresi (0x + 60-64 hex).', sn_step_bal: 'bakiyeler', sn_step_pos: 'JediSwap v2 pozisyonları (Transfer geçmişi)', sn_step_pools: 'staking havuz listesi', sn_step_members: 'havuz üyelikleri', sn_done: 'Starknet taraması bitti', sn_pos: 'JediSwap v2 pozisyonu', sn_pos_note: 'Cüzdan adına decrease_liquidity + collect simüle edildi.', sn_pos_note2: 'Simülasyon yapılamadı; likidite zincirden okundu.', sn_stake: 'STRK delegasyonu', sn_stake_note: 'Ödül hemen gelir; anapara için {d} günlük bekleme başlar (claim_rewards + exit_delegation_pool_intent, tek imza).', sn_stake_wait: 'Bekleme sürüyor; {when} sonrası “Çıkışı tamamla”.', sn_stake_action: 'Bekleme doldu; exit_delegation_pool_action ile anapara cüzdana döner.', sn_stake_reward: 'birikmiş ödül', btn_sn_exit: 'Ödül al + çıkışı başlat', btn_sn_action: 'Çıkışı tamamla', sn_no_wallet: 'Starknet cüzdanı (Braavos / Ready X) bulunamadı.', sn_none: 'Bu adreste JediSwap v2 pozisyonu ya da STRK delegasyonu bulunmadı.'
     },
     en: {
       tagline: 'Serverless · keyless · open source',
       hero_title: 'Find what your wallet left behind. Recover it in one click.',
-      hero_text: 'Scans 37 EVM chains and Starknet for liquidity positions, deposits, locks, vestings and unredeemed bridge transfers. Amounts are on-chain simulations made on behalf of the wallet, not estimates. No keys are ever requested; only your own wallet signs.',
+      hero_text: 'Scans 37 EVM chains, Starknet and Solana for liquidity positions, deposits, locks, vestings, unfinished bridge transfers and forgotten token approvals. Amounts are on-chain simulations made on behalf of the wallet, not estimates. No keys are ever requested; only your own wallet signs.',
       btn_scan: 'Scan', btn_stop: 'Stop', btn_connect: 'Connect wallet', wallet_none: 'no wallet connected', status_idle: 'Enter an address and start the scan.',
-      key_summary: 'Etherscan API key: a shared free key ships with the app (opBNB, HyperEVM, Taiko, Sei); if it hits its limit, paste your own free key here', btn_key_save: 'Save', key_link: 'Get a free key ↗', key_hint: 'The key stays in this browser (localStorage) and is sent only to the Etherscan API; nothing else receives it.', es_shared_limit: 'The shared Etherscan key hit its limit; add your own free key to bring these chains to full coverage.',
+      key_summary: 'Etherscan API key: a shared free key ships with the app (opBNB, HyperEVM, Taiko, Sei); if it hits its limit, paste your own free key here', h_appr: 'Token approvals', btn_appr_scan: 'Scan approvals', appr_idle: 'Approvals are scanned automatically after the main scan.', appr_hint: 'Finish the main scan first.', appr_done: 'Spender discovery: full history on {full} chains, recent blocks on {win}, known spenders only on {none}.', appr_log: '{n} active token approvals found, {u} of them unlimited.', unlimited: 'Unlimited', btn_revoke: 'Revoke', revoked: 'Approval revoked', revoke_partial: 'The allowance is still non-zero; the token may need a second step, try again.', th_spender: 'Spender', th_allowance: 'Allowance', th_held: 'Held', none_appr: 'No active token approvals.', appr_more: 'Show the remaining {n} approvals (unlimited and funded ones are listed first)', export_empty: 'Nothing to export yet.', exported: 'Exported', hist_diff: 'Compared with the previous scan ({when}): {fresh} new findings, {gone} gone.', pill_new: 'new', lz_note_failed: 'The message failed or is blocked on the destination chain; retry or clear it from the LayerZero Scan page.', lz_note_stored: 'The payload is stored on the destination but not delivered; retry from LayerZero Scan.', lz_note_inflight: 'In flight for more than an hour; follow it on LayerZero Scan.', across_expired: 'Expired; Across refunds on the origin chain, check the transaction page.', across_pending: 'Not filled yet; follow it on the Across transaction page.', name_none: '{name} does not resolve to an address.', name_chars: 'The name contains unsupported characters.', resolving: 'Resolving name', resolved: 'Name resolved', h_sol: 'Solana', h_sol_sub: 'Reclaim the rent locked in empty token accounts; Phantom, Solflare, Backpack', sol_idle: 'Enter a Solana address and scan.', sol_done: 'Balance {bal} SOL · {n} empty token accounts · reclaimable {sol} SOL ({usd}) · {held} funded accounts', sol_none: 'No empty token accounts.', sol_empty_accounts: '{n} empty token accounts (locked rent)', sol_note_close: 'closeAccount; about 0.002 SOL per account returns to the wallet. 25 accounts per transaction, each simulated first; the wallet approves every transaction.', btn_sol_close: 'Close and reclaim', btn_sol_connect: 'Connect Solana wallet', sol_no_wallet: 'No Solana wallet found (Phantom, Solflare, Backpack).', sol_bad_addr: 'Invalid Solana address.', sol_rpc_hint: 'Solana’s public RPCs usually refuse account enumeration from browsers (403). Paste your own RPC URL; a free Helius plan is enough and the URL stays in this browser.', sol_rpc_label: 'Solana RPC (optional)', sol_closing: 'Closing {n} accounts; approve in your wallet.', btn_key_save: 'Save',key_link: 'Get a free key ↗', key_hint: 'The key stays in this browser (localStorage) and is sent only to the Etherscan API; nothing else receives it.', es_shared_limit: 'The shared Etherscan key hit its limit; add your own free key to bring these chains to full coverage.',
       kpi_ready: 'Withdrawable now', kpi_wait: 'Waiting', kpi_native: 'Native balances', kpi_cov: 'Coverage',
       h_ready: 'Withdrawable', h_ready_sub: 'One click; simulated first, then you approve each transaction in your wallet', h_wait: 'Waiting', h_wait_sub: 'Withdrawable once the lock or vesting period ends', h_info: 'Manual', h_info_sub: 'Needs a protocol-specific flow; the link opens the protocol UI', h_tokens: 'Tokens', h_tokens_sub: 'Freely tradable balances sitting in the wallet (≥ $1)', h_native: 'Native coins', h_cov: 'Coverage matrix', h_cov_sub: 'Data source and coverage level per chain', h_log: 'Activity',
       th_chain: 'Chain', th_what: 'Asset', th_amount: 'Amount', th_note: 'Details', th_when: 'Unlocks', th_balance: 'Balance', th_txs: 'Txs',
       lg_full: 'Full: token and NFT index read', lg_partial: 'Partial: limited block range', lg_native: 'Native balance only', lg_error: 'Source did not respond',
-      foot_a: 'Security.', foot1: 'The page never asks for a private key, seed phrase or signature; it only prepares unsigned transactions (to / data / value) that your wallet displays. Every transaction is simulated on behalf of the wallet before it is sent; a reverting transaction is never sent. All requests go directly to public RPC, Blockscout, Routescan, BTRScan, Etherscan, CoinGecko and Wormholescan endpoints.', foot_b: 'Disclaimer.', foot2: 'Not financial advice. Amounts are simulations and chain reads; they can change at execution time and gas is on you.', foot3: 'Open source · MIT ·',
+      foot_a: 'Security.', foot1: 'The page never asks for a private key, seed phrase or signature; it only prepares unsigned transactions (to / data / value) that your wallet displays. Every transaction is simulated on behalf of the wallet before it is sent; a reverting transaction is never sent. All requests go directly to public RPC, Blockscout, Routescan, BTRScan, Etherscan, DefiLlama, LI.FI, Wormholescan, LayerZero Scan and Across endpoints.', foot_b: 'Disclaimer.', foot2: 'Not financial advice. Amounts are simulations and chain reads; they can change at execution time and gas is on you.', foot3: 'Open source · MIT ·',
       bad_addr: 'Invalid address: expected 0x followed by 40 hex characters.', scanning: 'Scanning', chains: 'chains', done: 'Scan complete', findings: 'findings', stopped: 'Scan stopped', none_ready: 'Nothing withdrawable in one click right now.', none_wait: 'No pending locks or vestings.', none_info: 'No assets need a manual flow.', none_tokens: 'No balance.', none_native: 'No balance.', pending: 'Populates when the scan completes.',
       items: 'items', full_cov: 'chains fully covered', key_saved: 'Etherscan key saved', key_cleared: 'Etherscan key removed',
       btn_withdraw: 'Withdraw', btn_unlock: 'Unlock', btn_claim: 'Claim', btn_vest: 'Start vesting', btn_go: 'GO', proto_link: 'protocol UI', after: 'onwards', total_native: 'total', no_wallet: 'No EVM wallet (MetaMask, Rabby, …) detected.', connected: 'Wallet connected', wrong_wallet: 'Connected wallet is not the scanned address; nothing was sent.', different: '· differs from the scanned address', scanned_addr: '· scanned address',
@@ -246,7 +261,7 @@
       note_escrow: 'Lock/escrow token: vesting or lock period is resolved in the protocol UI.', note_token: 'Standard token; visible in the wallet.', note_aave: 'withdraw(asset, max, owner). Partial if there is open debt.', note_ctoken: 'redeem(balance). Reverts if the pool lacks liquidity.', note_bitlayer: 'claimDelayedRedeems(). Reverts before the timer ends; nothing is lost.', lbl_bitlayer: 'Bedrock uniBTC delayed redeem → BTC', lbl_aave: 'Aave-style deposit', lbl_ctoken: 'Compound-style deposit', lbl_pos: 'Concentrated liquidity position', lbl_lp: 'liquidity',
       lbl_velock: 'vote lock (ve-NFT)', note_velock_ready: 'Lock expired; withdraw(tokenId) returns the locked amount to the wallet.', note_velock_wait: 'Lock still running; “Unlock” appears when it ends.', lbl_xtoken_pending: 'vesting', note_xtoken_ready: 'Vesting finished; claimed with finalizeRedeem.', note_xtoken_wait: 'Vesting in progress.', note_xtoken_start: 'Starts a vesting: claimable after {days} days; the shortest duration yields the lowest conversion ratio. Pick a longer duration in the protocol UI for a better ratio.', lbl_glp: 'GMX GLP (staked)', note_glp: 'unstakeAndRedeemGlp: unstakes GLP and redeems it into the wrapped native coin.',
       note_blocked: 'Withdrawal is not possible right now, the simulation reverted: {reason}. The protocol may have paused or frozen the reserve; rescan once it reopens.', preflight_fail: 'Not sent: the preflight simulation reverted ({reason}). No gas was spent.',
-      wh_transfer: 'not redeemed on the target chain', wh_msg: 'Wormhole message looks incomplete on the target', wh_note: 'Redeem from the target wallet via Portal Bridge “Redeem”.', wh_note2: 'May be a swap or a message; amount unknown, inspect the link.',
+      wh_transfer: 'not redeemed on the target chain', wh_msg: 'Wormhole message looks incomplete on the target', wh_note: 'VAA signed, not redeemed on the target chain. In Portal Bridge choose “Resume transaction / Redeem”: source chain {from}, transaction {hash}; connect the target wallet ({to}) and press Redeem. Verify: wormholescan.io/#/tx/{hash}', wh_note2: 'May be a swap or a message; amount unknown. Transaction {hash}; open the Wormholescan page for details.',
       h_cons: 'Consolidate', h_cons_sub: 'Bridges balances to the chain and asset you choose (LI.FI); every step is simulated first', cons_dest: 'Target chain', cons_token: 'Target asset', cons_min: 'Minimum (USD)', btn_cons_plan: 'Build plan', btn_cons_all: 'Send all', cons_receive: 'Receive', cons_cost: 'Gas + fees', cons_route: 'Route', cons_empty: 'Finish the scan first, then pick a target and build the plan.', cons_none: 'No balance above the minimum outside the target chain.', cons_quoting: 'Fetching quotes', cons_nogas: 'no native coin for gas on the source chain', cons_noroute: 'no route found', cons_send: 'Send', cons_sent: 'handed to the bridge; arrival takes a few minutes', cons_approve: 'approval', cons_net: 'net', cons_plan_done: 'Plan ready: {n} sources, total ≈ {usd} → ≈ {to} on the target',
       h_sn: 'Starknet', h_sn_sub: 'JediSwap v2 positions and STRK staking; signed with Braavos or Ready X', btn_sn_connect: 'Connect Starknet wallet', sn_idle: 'Enter an address and start the scan. The first scan takes 3-5 minutes (737 staking pools and position history are read on chain).', sn_bad_addr: 'Invalid Starknet address (0x + 60-64 hex).', sn_step_bal: 'balances', sn_step_pos: 'JediSwap v2 positions (transfer history)', sn_step_pools: 'staking pool list', sn_step_members: 'pool memberships', sn_done: 'Starknet scan complete', sn_pos: 'JediSwap v2 position', sn_pos_note: 'decrease_liquidity + collect simulated on behalf of the wallet.', sn_pos_note2: 'Simulation unavailable; liquidity read on chain.', sn_stake: 'STRK delegation', sn_stake_note: 'Rewards arrive immediately; principal starts a {d}-day exit window (claim_rewards + exit_delegation_pool_intent, one signature).', sn_stake_wait: 'Exit window running; “Complete exit” after {when}.', sn_stake_action: 'Exit window over; exit_delegation_pool_action returns the principal.', sn_stake_reward: 'unclaimed rewards', btn_sn_exit: 'Claim + start exit', btn_sn_action: 'Complete exit', sn_no_wallet: 'No Starknet wallet (Braavos / Ready X) detected.', sn_none: 'No JediSwap v2 position or STRK delegation found for this address.'
     }
@@ -260,33 +275,33 @@
   //   bs:<url> Blockscout v2 (keyless) · rs Routescan (keyless) · btr BTRScan (keyless) · es Etherscan V2 (user key)
   //   logs full-range eth_getLogs · logs:<window>:<n> bounded eth_getLogs (partial coverage)
   var CHAINS = [
-    ['ethereum', 1, 'Ethereum', 'ETH', ['https://ethereum-rpc.publicnode.com', 'https://eth.llamarpc.com'], 'https://etherscan.io', 'ethereum', ['bs:https://eth.blockscout.com', 'es'], 'ethereum'],
-    ['base', 8453, 'Base', 'ETH', ['https://base-rpc.publicnode.com', 'https://mainnet.base.org'], 'https://basescan.org', 'ethereum', ['bs:https://base.blockscout.com', 'es'], 'base'],
-    ['arbitrum', 42161, 'Arbitrum One', 'ETH', ['https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc'], 'https://arbiscan.io', 'ethereum', ['bs:https://arbitrum.blockscout.com', 'es'], 'arbitrum-one'],
-    ['optimism', 10, 'Optimism', 'ETH', ['https://optimism-rpc.publicnode.com', 'https://mainnet.optimism.io'], 'https://optimistic.etherscan.io', 'ethereum', ['bs:https://explorer.optimism.io', 'es'], 'optimistic-ethereum'],
-    ['polygon', 137, 'Polygon', 'POL', ['https://polygon-bor-rpc.publicnode.com', 'https://polygon-rpc.com'], 'https://polygonscan.com', 'polygon-ecosystem-token', ['bs:https://polygon.blockscout.com', 'es'], 'polygon-pos'],
-    ['zksync', 324, 'zkSync Era', 'ETH', ['https://mainnet.era.zksync.io'], 'https://explorer.zksync.io', 'ethereum', ['bs:https://zksync.blockscout.com'], 'zksync'],
-    ['linea', 59144, 'Linea', 'ETH', ['https://linea-rpc.publicnode.com', 'https://rpc.linea.build'], 'https://lineascan.build', 'ethereum', ['bs:https://api-explorer.linea.build', 'es'], 'linea'],
-    ['scroll', 534352, 'Scroll', 'ETH', ['https://scroll-rpc.publicnode.com', 'https://rpc.scroll.io'], 'https://scrollscan.com', 'ethereum', ['bs:https://scrollscan.com', 'logs:50000:40'], 'scroll'],
-    ['mode', 34443, 'Mode', 'ETH', ['https://mainnet.mode.network'], 'https://explorer.mode.network', 'ethereum', ['bs:https://explorer.mode.network'], 'mode'],
-    ['manta', 169, 'Manta Pacific', 'ETH', ['https://pacific-rpc.manta.network/http'], 'https://pacific-explorer.manta.network', 'ethereum', ['bs:https://pacific-explorer.manta.network'], 'manta-pacific'],
-    ['soneium', 1868, 'Soneium', 'ETH', ['https://rpc.soneium.org'], 'https://soneium.blockscout.com', 'ethereum', ['bs:https://soneium.blockscout.com'], 'soneium'],
-    ['lisk', 1135, 'Lisk', 'ETH', ['https://rpc.api.lisk.com'], 'https://blockscout.lisk.com', 'ethereum', ['bs:https://blockscout.lisk.com'], 'lisk'],
-    ['celo', 42220, 'Celo', 'CELO', ['https://celo-rpc.publicnode.com', 'https://forno.celo.org'], 'https://celoscan.io', 'celo', ['bs:https://celo.blockscout.com', 'es'], 'celo'],
-    ['ink', 57073, 'Ink', 'ETH', ['https://rpc-gel.inkonchain.com'], 'https://explorer.inkonchain.com', 'ethereum', ['bs:https://explorer.inkonchain.com'], 'ink'],
+    ['ethereum', 1, 'Ethereum', 'ETH', ['https://ethereum-rpc.publicnode.com', 'https://eth.drpc.org'], 'https://etherscan.io', 'ethereum', ['bs:https://eth.blockscout.com', 'es', 'logs:9000:60'], 'ethereum'],
+    ['base', 8453, 'Base', 'ETH', ['https://base-rpc.publicnode.com', 'https://mainnet.base.org'], 'https://basescan.org', 'ethereum', ['bs:https://base.blockscout.com', 'es', 'logs:2000:60'], 'base'],
+    ['arbitrum', 42161, 'Arbitrum One', 'ETH', ['https://arb1.arbitrum.io/rpc', 'https://arbitrum-one-rpc.publicnode.com'], 'https://arbiscan.io', 'ethereum', ['bs:https://arbitrum.blockscout.com', 'es', 'logs'], 'arbitrum-one'],
+    ['optimism', 10, 'Optimism', 'ETH', ['https://mainnet.optimism.io', 'https://optimism-rpc.publicnode.com'], 'https://optimistic.etherscan.io', 'ethereum', ['bs:https://explorer.optimism.io', 'es', 'logs:10000:60'], 'optimistic-ethereum'],
+    ['polygon', 137, 'Polygon', 'POL', ['https://polygon-bor-rpc.publicnode.com', 'https://polygon.drpc.org', 'https://polygon-rpc.com'], 'https://polygonscan.com', 'polygon-ecosystem-token', ['bs:https://polygon.blockscout.com', 'es', 'logs:9000:60'], 'polygon-pos'],
+    ['zksync', 324, 'zkSync Era', 'ETH', ['https://mainnet.era.zksync.io'], 'https://explorer.zksync.io', 'ethereum', ['bs:https://zksync.blockscout.com', 'logs'], 'zksync'],
+    ['linea', 59144, 'Linea', 'ETH', ['https://rpc.linea.build', 'https://linea-rpc.publicnode.com'], 'https://lineascan.build', 'ethereum', ['bs:https://api-explorer.linea.build', 'es', 'logs:10000:60'], 'linea'],
+    ['scroll', 534352, 'Scroll', 'ETH', ['https://scroll-rpc.publicnode.com', 'https://rpc.scroll.io'], 'https://scrollscan.com', 'ethereum', ['bs:https://scrollscan.com', 'logs:10000:60'], 'scroll'],
+    ['mode', 34443, 'Mode', 'ETH', ['https://mainnet.mode.network'], 'https://explorer.mode.network', 'ethereum', ['bs:https://explorer.mode.network', 'logs'], 'mode'],
+    ['manta', 169, 'Manta Pacific', 'ETH', ['https://pacific-rpc.manta.network/http'], 'https://pacific-explorer.manta.network', 'ethereum', ['bs:https://pacific-explorer.manta.network', 'logs:10000:60'], 'manta-pacific'],
+    ['soneium', 1868, 'Soneium', 'ETH', ['https://rpc.soneium.org'], 'https://soneium.blockscout.com', 'ethereum', ['bs:https://soneium.blockscout.com', 'logs:100000:40'], 'soneium'],
+    ['lisk', 1135, 'Lisk', 'ETH', ['https://rpc.api.lisk.com'], 'https://blockscout.lisk.com', 'ethereum', ['bs:https://blockscout.lisk.com', 'logs:100000:40'], 'lisk'],
+    ['celo', 42220, 'Celo', 'CELO', ['https://forno.celo.org', 'https://celo-rpc.publicnode.com'], 'https://celoscan.io', 'celo', ['bs:https://celo.blockscout.com', 'es', 'logs:5000:60'], 'celo'],
+    ['ink', 57073, 'Ink', 'ETH', ['https://rpc-gel.inkonchain.com'], 'https://explorer.inkonchain.com', 'ethereum', ['bs:https://explorer.inkonchain.com', 'logs:10000:60'], 'ink'],
     ['metis', 1088, 'Metis', 'METIS', ['https://andromeda.metis.io/?owner=1088', 'https://metis-rpc.publicnode.com'], 'https://andromeda-explorer.metis.io', 'metis-token', ['logs'], 'metis-andromeda'],
     ['gnosis', 100, 'Gnosis', 'xDAI', ['https://rpc.gnosischain.com', 'https://gnosis-rpc.publicnode.com', 'https://1rpc.io/gnosis', 'https://gnosis.drpc.org'], 'https://gnosisscan.io', 'xdai', ['bs:https://gnosisscan.io', 'logs', 'es'], 'xdai'],
-    ['immutable', 13371, 'Immutable zkEVM', 'IMX', ['https://rpc.immutable.com'], 'https://explorer.immutable.com', 'immutable-x', ['bs:https://explorer.immutable.com'], 'immutable'],
-    ['unichain', 130, 'Unichain', 'ETH', ['https://unichain-rpc.publicnode.com'], 'https://uniscan.xyz', 'ethereum', ['bs:https://unichain.blockscout.com', 'es'], 'unichain'],
+    ['immutable', 13371, 'Immutable zkEVM', 'IMX', ['https://rpc.immutable.com'], 'https://explorer.immutable.com', 'immutable-x', ['bs:https://explorer.immutable.com', 'logs:5000:60'], 'immutable'],
+    ['unichain', 130, 'Unichain', 'ETH', ['https://mainnet.unichain.org', 'https://unichain-rpc.publicnode.com'], 'https://uniscan.xyz', 'ethereum', ['bs:https://unichain.blockscout.com', 'es', 'logs:10000:60'], 'unichain'],
     ['bsc', 56, 'BNB Chain', 'BNB', ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.binance.org'], 'https://bscscan.com', 'binancecoin', ['es'], 'binance-smart-chain'],
-    ['avalanche', 43114, 'Avalanche C-Chain', 'AVAX', ['https://avalanche-c-chain-rpc.publicnode.com'], 'https://snowtrace.io', 'avalanche-2', ['rs', 'es'], 'avalanche'],
+    ['avalanche', 43114, 'Avalanche C-Chain', 'AVAX', ['https://avalanche-c-chain-rpc.publicnode.com', 'https://api.avax.network/ext/bc/C/rpc'], 'https://snowtrace.io', 'avalanche-2', ['rs', 'es', 'logs:2000:60'], 'avalanche'],
     ['bitlayer', 200901, 'Bitlayer', 'BTC', ['https://rpc.bitlayer.org'], 'https://www.btrscan.com', 'bitcoin', ['btr', 'logs'], 'bitlayer'],
     ['hyperevm', 999, 'HyperEVM', 'HYPE', ['https://rpc.hyperliquid.xyz/evm'], 'https://hyperevmscan.io', 'hyperliquid', ['es', 'logs:900:80'], 'hyperevm'],
-    ['opbnb', 204, 'opBNB', 'BNB', ['https://opbnb-rpc.publicnode.com'], 'https://opbnbscan.com', 'binancecoin', ['es'], 'opbnb'],
+    ['opbnb', 204, 'opBNB', 'BNB', ['https://opbnb-rpc.publicnode.com', 'https://opbnb.drpc.org'], 'https://opbnbscan.com', 'binancecoin', ['es', 'logs:10000:60'], 'opbnb'],
     ['taiko', 167000, 'Taiko', 'ETH', ['https://rpc.mainnet.taiko.xyz'], 'https://taikoscan.io', 'ethereum', ['es', 'logs:2000:60'], 'taiko'],
     ['zora', 7777777, 'Zora', 'ETH', ['https://rpc.zora.energy'], 'https://explorer.zora.energy', 'ethereum', ['logs'], 'zora-network'],
-    ['blast', 81457, 'Blast', 'ETH', ['https://blast-rpc.publicnode.com'], 'https://blastscan.io', 'ethereum', ['rs', 'es', 'logs:50000:40'], 'blast'],
-    ['mantle', 5000, 'Mantle', 'MNT', ['https://mantle-rpc.publicnode.com'], 'https://mantlescan.xyz', 'mantle', ['rs', 'es', 'logs:50000:40'], 'mantle'],
+    ['blast', 81457, 'Blast', 'ETH', ['https://blast-rpc.publicnode.com', 'https://rpc.blast.io'], 'https://blastscan.io', 'ethereum', ['rs', 'es', 'logs:10000:60'], 'blast'],
+    ['mantle', 5000, 'Mantle', 'MNT', ['https://mantle-rpc.publicnode.com', 'https://rpc.mantle.xyz'], 'https://mantlescan.xyz', 'mantle', ['rs', 'es', 'logs:10000:60'], 'mantle'],
     ['polygon-zkevm', 1101, 'Polygon zkEVM', 'ETH', ['https://zkevm-rpc.com'], 'https://zkevm.polygonscan.com', 'ethereum', ['logs:10000:80'], 'polygon-zkevm'],
     ['bob', 60808, 'BOB', 'ETH', ['https://rpc.gobob.xyz'], 'https://explorer.gobob.xyz', 'ethereum', ['logs'], 'bob-network'],
     ['core', 1116, 'Core', 'CORE', ['https://rpc.coredao.org'], 'https://scan.coredao.org', 'coredaoorg', ['logs'], 'core'],
@@ -294,9 +309,9 @@
     ['sei', 1329, 'Sei EVM', 'SEI', ['https://evm-rpc.sei-apis.com'], 'https://seitrace.com', 'sei-network', ['es', 'logs:2000:60'], 'sei-v2'],
     ['abstract', 2741, 'Abstract', 'ETH', ['https://api.mainnet.abs.xyz'], 'https://abscan.org', 'ethereum', ['logs', 'es'], 'abstract'],
     ['fraxtal', 252, 'Fraxtal', 'frxETH', ['https://rpc.frax.com'], 'https://fraxscan.com', 'frax-ether', ['logs', 'es'], 'fraxtal'],
-    ['arbitrum-nova', 42170, 'Arbitrum Nova', 'ETH', ['https://nova.arbitrum.io/rpc'], 'https://nova.arbiscan.io', 'ethereum', ['logs'], 'arbitrum-nova'],
+    ['arbitrum-nova', 42170, 'Arbitrum Nova', 'ETH', ['https://nova.arbitrum.io/rpc'], 'https://arbitrum-nova.blockscout.com', 'ethereum', ['logs'], 'arbitrum-nova'],
     ['merlin', 4200, 'Merlin', 'BTC', ['https://rpc.merlinchain.io'], 'https://scan.merlinchain.io', 'bitcoin', ['bs:https://scan.merlinchain.io', 'logs:2000:60'], 'merlin-chain'],
-    ['b2', 223, 'B² Network', 'BTC', ['https://rpc.bsquared.network'], 'https://explorer.bsquared.network', 'bitcoin', [], 'bsquared-network']
+    ['b2', 223, 'B² Network', 'BTC', ['https://rpc.bsquared.network'], 'https://explorer.bsquared.network', 'bitcoin', ['logs:1000:60'], 'bsquared-network']
   ].map(function (r) { return { key: r[0], id: r[1], hex: '0x' + r[1].toString(16), name: r[2], sym: r[3], rpc: r[4], explorer: r[5], cg: r[6], sources: r[7], cgPlatform: r[8] }; });
   var CHAIN = {}; CHAINS.forEach(function (c) { CHAIN[c.key] = c; });
   var KNOWN_NPMS = {
@@ -355,6 +370,7 @@
   function buildGlpUnstake(router, out, amount, owner) { return [{ to: router, data: SEL.unstakeAndRedeemGlp + wa(out) + w(amount) + w(0) + wa(owner), value: '0x0' }]; }
   function parseDelayedRedeems(hex) { var W = words(hex); if (W.length < 2) return []; var n = Number(W[1]), out = []; for (var i = 0; i < n; i++) { var a = W[2 + i * 3], b = W[3 + i * 3], tok = W[4 + i * 3]; if (tok === undefined) break; var amt, ts; if (b >= TS_LO && b <= TS_HI) { amt = a; ts = b; } else if (a >= TS_LO && a <= TS_HI) { amt = b; ts = a; } else continue; out.push({ amount: amt, createdAt: Number(ts), token: addrOf(tok) }); } return out; }
   function classify(symbol, name, type) { var s = (symbol || '') + ' ' + (name || ''); if (SPAM_RE.test(s)) return 'spam'; if (type === 'ERC-721' || type === 'ERC-1155') return POS_NFT_RE.test(s) ? 'position_nft' : (VE_NFT_RE.test(s) ? 've_nft' : 'nft'); if (LP_RE.test(symbol || '') || LP_RE.test(name || '')) return 'lp'; if (ESCROW_PREFIX_RE.test(symbol || '') || ESCROW_RE.test(symbol || '') || ESCROW_RE.test(name || '')) return 'escrow'; return 'token'; }
+  function dexUi(sym, chainKey) { var s = sym || ''; if (/^Cake-LP$/i.test(s)) return 'https://pancakeswap.finance/liquidity'; if (/^UNI-V2$/i.test(s)) return 'https://app.uniswap.org/positions'; if (/^SLP$/i.test(s)) return 'https://www.sushi.com/pool'; if (/^KIM-LP$/i.test(s)) return 'https://app.kim.exchange'; if (/^[vs]AMM/i.test(s)) { if (chainKey === 'base') return 'https://aerodrome.finance/dash'; if (chainKey === 'optimism') return 'https://velodrome.finance/dash'; } return null; }
   function protoLink(sym, name) { var s = (sym || '') + ' ' + (name || ''); for (var i = 0; i < PROTO_LINKS.length; i++) if (PROTO_LINKS[i][0].test(sym || '') || PROTO_LINKS[i][0].test(s)) return PROTO_LINKS[i][1]; return null; }
   function fnum(x, d) { return Number(x).toLocaleString(LANG === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: d === undefined ? 6 : d }); }
   function fmtAmt(bi, dec) { var v = Number(bi) / Math.pow(10, dec); if (v === 0) return '0'; return v >= 1 ? fnum(v, 4) : Number(v.toPrecision(4)).toString(); }
@@ -367,7 +383,7 @@
   function hostLimit(url) { var h; try { h = new URL(url).host; } catch (e) { h = url; } if (!HOST_LIMIT[h]) HOST_LIMIT[h] = limiter(h === 'api.etherscan.io' ? 1 : 2); return HOST_LIMIT[h]; }
   function withTimeout(ms) { var c = new AbortController(); setTimeout(function () { c.abort(); }, ms); return c.signal; }
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-  async function rpc(chain, method, params) { var last = 'no rpc'; for (var i = 0; i < chain.rpc.length; i++) { try { var r = await fetch(chain.rpc[i], { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params }), signal: withTimeout(15000) }); var j = await r.json(); if (j.error) { var e = new Error(String(j.error.message || JSON.stringify(j.error)).slice(0, 160)); e.rpcError = true; e.data = j.error.data; throw e; } return j.result; } catch (e) { last = e; if (e.rpcError) throw e; } } throw (last instanceof Error ? last : new Error(String(last))); }
+  async function rpc(chain, method, params) { var last = 'no rpc', n = chain.rpc.length, start = method === 'eth_getLogs' && chain.logsRpc ? chain.logsRpc : 0; for (var k = 0; k < n; k++) { var i = (start + k) % n; try { var r = await fetch(chain.rpc[i], { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params }), signal: withTimeout(15000) }); var j = await r.json(); if (j.error) { var e = new Error(String(j.error.message || JSON.stringify(j.error)).slice(0, 160)); e.rpcError = true; e.data = j.error.data; throw e; } if (method === 'eth_getLogs') chain.logsRpc = i; return j.result; } catch (e) { last = e; if (e.rpcError && method !== 'eth_getLogs') throw e; } } throw (last instanceof Error ? last : new Error(String(last))); }
   function call(chain, to, data, from) { var o = { to: to, data: data }; if (from) o.from = from; return rpcLimit(function () { return rpc(chain, 'eth_call', [o, 'latest']); }); }
   // Index/API GET with a short budget: two attempts, 15 s each. A 429 is treated as "source busy" so the chain falls
   // through to its next source instead of stalling the whole scan.
@@ -526,7 +542,7 @@
       var m0 = await erc20Meta(c, t0), m1 = await erc20Meta(c, t1); if (SPAM_RE.test(m0.sym + ' ' + m0.name) || SPAM_RE.test(m1.sym + ' ' + m1.name)) return;
       var v0 = Number(r0) / Math.pow(10, m0.dec), v1 = Number(r1) / Math.pow(10, m1.dec), u0 = await tokenUsd(c, t0, m0.sym, v0), u1 = await tokenUsd(c, t1, m1.sym, v1), usd = (u0 == null && u1 == null) ? null : (u0 || 0) + (u1 || 0);
       var share = t('note_lp') + ' %' + (100 * Number(bal) / Number(ts)).toFixed(4);
-      var base = { chain: c.key, chain_name: c.name, kind: 'lp', label: symbol + ' · ' + m0.sym + '/' + m1.sym + ' ' + t('lbl_lp'), amount: fmtAmt(r0, m0.dec) + ' ' + m0.sym + ' + ' + fmtAmt(r1, m1.dec) + ' ' + m1.sym, usd: usd, explorer: c.explorer + '/address/' + lpAddr };
+      var base = { chain: c.key, chain_name: c.name, kind: 'lp', label: symbol + ' · ' + m0.sym + '/' + m1.sym + ' ' + t('lbl_lp'), amount: fmtAmt(r0, m0.dec) + ' ' + m0.sym + ' + ' + fmtAmt(r1, m1.dec) + ' ' + m1.sym, usd: usd, explorer: dexUi(symbol, c.key) || (c.explorer + '/address/' + lpAddr) };
       // Router path (single atomic removal) whenever the pair's factory maps to a router we can verify on chain.
       var factory = null, route = null; try { factory = addrOf(BigInt(await call(c, lpAddr, SEL.factory))); route = FACTORY_ROUTERS[factory]; } catch (e) { route = null; }
       if (route) { try { if (addrOf(BigInt(await call(c, route.router, SEL.factory))) !== factory) route = null; } catch (e) { route = null; } }
@@ -594,12 +610,12 @@
       }
     }
     async function bitlayer() { var c = CHAIN.bitlayer, raw, delay; try { raw = await call(c, BITLAYER_REDEEM_ROUTER, SEL.getUserDelayedRedeems + wa(address)); delay = Number(BigInt(await call(c, BITLAYER_REDEEM_ROUTER, SEL.redeemDelay))); } catch (e) { return; } parseDelayedRedeems(raw).forEach(function (r) { var ready = r.createdAt + delay, amt = Number(r.amount) / 1e8; item({ chain: 'bitlayer', chain_name: c.name, kind: 'bitlayer_redeem', status: now() >= ready ? 'ready' : 'waiting', available_at: ready, label: t('lbl_bitlayer'), amount: amt.toFixed(8) + ' BTC', usd: usdBySymbol('BTC', amt, st.prices), note: t('note_bitlayer'), explorer: c.explorer + '/address/' + BITLAYER_REDEEM_ROUTER, action: { kind: 'bitlayer_claim' } }); }); }
-    async function wormhole() { var ops; try { var r = await fetch('https://api.wormholescan.io/api/v1/operations?address=' + address + '&page=0&pageSize=50', { signal: withTimeout(20000) }); ops = (await r.json()).operations || []; } catch (e) { return; } ops.forEach(function (o) { var tgt = o.targetChain || {}, src = o.sourceChain || {}; if (tgt.status === 'completed') return; var sp = (o.content && o.content.standarizedProperties) || {}, d = o.data || {}, apps = (sp.appIds || []).join(', ') || 'token bridge', amt = d.tokenAmount, sym = d.symbol || '', when = (src.timestamp || '').slice(0, 10), toChain = sp.toChain || '?'; var label = amt && sym ? 'Wormhole · ' + amt + ' ' + sym + ' → chain ' + toChain + ' ' + t('wh_transfer') : t('wh_msg') + ' (' + apps + ')'; var note = amt && sym ? when + ' · ' + String(sp.toAddress || '').slice(0, 20) + '… · ' + t('wh_note') : when + ' · ' + src.chainId + ' → ' + toChain + ' · ' + t('wh_note2'); item({ chain: 'wormhole', chain_name: 'Wormhole', kind: 'bridge', status: 'info', label: label, amount: ((amt || '?') + ' ' + sym).trim(), usd: d.usdAmount ? Number(d.usdAmount) : null, note: note, explorer: 'https://wormholescan.io/#/tx/' + ((src.transaction || {}).txHash || '') }); }); }
+    async function wormhole() { var ops; try { var r = await fetch('https://api.wormholescan.io/api/v1/operations?address=' + address + '&page=0&pageSize=50', { signal: withTimeout(20000) }); ops = (await r.json()).operations || []; } catch (e) { return; } ops.forEach(function (o) { var tgt = o.targetChain || {}, src = o.sourceChain || {}; if (tgt.status === 'completed') return; var sp = (o.content && o.content.standarizedProperties) || {}, d = o.data || {}, apps = (sp.appIds || []).join(', ') || 'token bridge', amt = d.tokenAmount, sym = d.symbol || '', when = (src.timestamp || '').slice(0, 10), toChain = sp.toChain || '?'; var label = amt && sym ? 'Wormhole · ' + amt + ' ' + sym + ' → chain ' + toChain + ' ' + t('wh_transfer') : t('wh_msg') + ' (' + apps + ')'; var hash = (src.transaction || {}).txHash || '', WH = { 1: 'Solana', 2: 'Ethereum', 4: 'BNB Chain', 5: 'Polygon', 6: 'Avalanche', 10: 'Fantom', 14: 'Celo', 16: 'Moonbeam', 19: 'Injective', 21: 'Sui', 22: 'Aptos', 23: 'Arbitrum', 24: 'Optimism', 30: 'Base' }, fromName = WH[src.chainId] || ('chain ' + src.chainId), toName = WH[toChain] || ('chain ' + toChain); var note = amt && sym ? when + ' · ' + t('wh_note', { from: fromName, to: toName, hash: hash }) : when + ' · ' + fromName + ' → ' + toName + ' · ' + t('wh_note2', { hash: hash }); item({ chain: 'wormhole', chain_name: 'Wormhole', kind: 'bridge', status: 'info', label: (amt && sym ? 'Wormhole · ' + amt + ' ' + sym + ' → ' + toName + ' ' + t('wh_transfer') : label), amount: ((amt || '?') + ' ' + sym).trim(), usd: d.usdAmount ? Number(d.usdAmount) : null, note: note, explorer: amt && sym ? 'https://portalbridge.com/' : 'https://wormholescan.io/#/tx/' + hash }); }); }
     var ids = new Set(); CHAINS.forEach(function (c) { if (c.cg) ids.add(c.cg); }); Object.keys(SYM_TO_CG).forEach(function (k) { ids.add(SYM_TO_CG[k]); });
     st.prices = await nativePrices(ids); onProgress(st);
     await Promise.all(CHAINS.map(native)); onProgress(st);
     await Promise.all(CHAINS.map(chainScan));
-    if (!STOP) { await bitlayer(); await wormhole(); }
+    if (!STOP) { await bitlayer(); await wormhole(); await bridgeScan(address, item); }
     st.items.sort(function (a, b) { return (b.usd || 0) - (a.usd || 0); });
     st.status = STOP ? 'stopped' : 'done'; st.updated = Date.now(); onProgress(st); return st;
   }
@@ -632,7 +648,7 @@
     $('kpiNative').textContent = usd(ntot) || '$0'; $('kpiNativeS').textContent = nat.filter(function (x) { return x.amount > 0; }).length + ' ' + t('chains');
     var full = Object.keys(st.coverage).filter(function (k) { return st.coverage[k].level === 'full'; }).length, partial = Object.keys(st.coverage).filter(function (k) { return st.coverage[k].level === 'partial'; }).length;
     $('kpiCov').textContent = full + (partial ? '+' + partial : '') + ' / ' + total; $('kpiCovS').textContent = t('full_cov');
-    function rowCommon(i) { return '<td>' + chainCell(i.chain, i.chain_name || i.chain) + '</td><td>' + esc(i.label) + (i.explorer ? ' <a class="go" target="_blank" rel="noopener" href="' + esc(i.explorer) + '" title="' + esc(i.explorer.indexOf('/token') > 0 || i.explorer.indexOf('/address') > 0 ? 'explorer' : t('proto_link')) + '">' + t('btn_go') + ' <span>↗</span></a>' : '') + '</td><td class="num">' + esc(i.amount) + '</td><td class="num">' + usd(i.usd) + '</td>'; }
+    function rowCommon(i) { return '<td>' + chainCell(i.chain, i.chain_name || i.chain) + '</td><td>' + esc(i.label) + (i.isNew ? ' <span class="pill ok">' + t('pill_new') + '</span>' : '') + (i.explorer ? ' <a class="go" target="_blank" rel="noopener" href="' + esc(i.explorer) + '" title="' + esc(i.explorer.indexOf('/token') > 0 || i.explorer.indexOf('/address') > 0 ? 'explorer' : t('proto_link')) + '">' + t('btn_go') + ' <span>↗</span></a>' : '') + '</td><td class="num">' + esc(i.amount) + '</td><td class="num">' + usd(i.usd) + '</td>'; }
     function fill(bodyId, emptyId, rows, cols, emptyKey) { var body = $(bodyId), empty = $(emptyId); if (rows.length) { body.innerHTML = rows.join(''); empty.style.display = 'none'; } else if (running && done < 6) { body.innerHTML = skeleton(cols); empty.style.display = 'none'; } else if (running) { body.innerHTML = ''; empty.textContent = t('scanning') + ' · ' + done + '/' + total + ' ' + t('chains'); empty.style.display = ''; } else { body.innerHTML = ''; empty.textContent = t(emptyKey); empty.style.display = ''; } }
     $('cntReady').textContent = ready.length; $('cntWait').textContent = wait.length; $('cntInfo').textContent = info.length; $('cntTokens').textContent = tokens.length; $('cntNative').textContent = nat.filter(function (x) { return x.amount > 0 || x.nonce > 0; }).length;
     fill('readyBody', 'readyEmpty', ready.map(function (i) { return '<tr>' + rowCommon(i) + '<td class="note">' + esc(i.note) + '</td><td class="num">' + (i.action ? '<button class="btn primary sm" data-act="' + esc(i.id) + '">' + actionLabel(i.action.kind) + '</button>' : '') + '</td></tr>'; }), 6, 'none_ready');
@@ -646,12 +662,18 @@
     Array.prototype.forEach.call(document.querySelectorAll('button[data-act]'), function (b) { b.addEventListener('click', function () { execute(b.getAttribute('data-act'), b); }); });
   }
   async function startScan() {
-    var a = addrInput(); if (!/^0x[0-9a-f]{40}$/.test(a)) { log(t('bad_addr'), 'bad'); return; }
+    var a = addrInput();
+    if (!/^0x[0-9a-f]{40}$/.test(a)) {
+      if (!/^[a-z0-9-]+(\.[a-z0-9-]+)*\.eth$/.test(a)) { log(t('bad_addr'), 'bad'); return; }
+      try { log(t('resolving') + ' · ' + a); a = await resolveEvmName(a); $('addr').value = a; log(t('resolved') + ' · ' + a, 'ok'); } catch (e) { log(errMsg(e), 'bad'); return; }
+    }
     try { localStorage.setItem('wrc_addr', a); } catch (e) { /* none */ }
     $('ident').innerHTML = identicon(a);
     STOP = false; $('btnScan').disabled = true; $('btnStop').disabled = false; $('log').innerHTML = ''; log(t('scanning') + ' · ' + a);
     try { STATE = await runScan(a, function (st) { STATE = st; render(st); }); } catch (e) { log(t('err') + ': ' + (e.message || e), 'bad'); }
+    if (STATE && STATE.status === 'done') { var diff = applyHistory(STATE); if (diff) log(t('hist_diff', { when: new Date(diff.ts).toLocaleString(LANG === 'tr' ? 'tr-TR' : 'en-US'), fresh: diff.fresh, gone: diff.gone.length }), diff.fresh ? 'ok' : ''); saveHistory(STATE); render(STATE); }
     $('btnScan').disabled = false; $('btnStop').disabled = true;
+    if (STATE && STATE.status === 'done' && !STOP) approvalScan(a).catch(function (e) { log(t('err') + ': ' + errMsg(e), 'bad'); });
   }
 
   // wallet (EIP-6963 discovery + legacy window.ethereum)
@@ -855,11 +877,11 @@
     } catch (ex) { log(snRejected(ex) ? t('rejected') : (t('err') + ': ' + errMsg(ex)), 'bad'); btn.disabled = false; }
   }
 
-  window.__wrc = { runScan: runScan, snScan: snScan, consPlan: consPlan, classify: classify, decodePositions: decodePositions, parseDelayedRedeems: parseDelayedRedeems, buildClWithdraw: buildClWithdraw, buildLpBurn: buildLpBurn, buildRouterRemove: buildRouterRemove, buildSteps: buildSteps, CHAINS: CHAINS, setKey: function (k) { ETH_KEY = k || ''; }, setState: function (s) { STATE = s; }, cons: CONS, i18n: I18N, srcEtherscan: srcEtherscan, srcBlockscout: srcBlockscout };
+  window.__wrc = { runScan: runScan, snScan: snScan, consPlan: consPlan, classify: classify, decodePositions: decodePositions, parseDelayedRedeems: parseDelayedRedeems, buildClWithdraw: buildClWithdraw, buildLpBurn: buildLpBurn, buildRouterRemove: buildRouterRemove, buildSteps: buildSteps, CHAINS: CHAINS, setKey: function (k) { ETH_KEY = k || ''; }, setState: function (s) { STATE = s; }, cons: CONS, i18n: I18N, srcEtherscan: srcEtherscan, srcBlockscout: srcBlockscout, approvalScan: approvalScan, approvalLogs: approvalLogs, bridgeScan: bridgeScan, resolveEvmName: resolveEvmName, resolveStarkName: resolveStarkName, solScan: solScan, solCloseTx: solCloseTx, applyHistory: applyHistory, saveHistory: saveHistory, exportFindings: exportFindings, keccakHex: keccakHex, namehash: namehash, appr: function () { return APPR; }, sol: function () { return SOL; } };
   consInit();
   $('btnConsPlan').addEventListener('click', consPlan);
   $('btnConsAll').addEventListener('click', consSendAll);
-  $('btnSnScan').addEventListener('click', function () { var a = $('snAddr').value.trim().toLowerCase(); if (!/^0x[0-9a-f]{50,64}$/.test(a)) { log(t('sn_bad_addr'), 'bad'); return; } try { localStorage.setItem('wrc_sn_addr', a); } catch (e) { /* none */ } $('btnSnScan').disabled = true; snScan(a).catch(function (e) { log(t('err') + ': ' + errMsg(e), 'bad'); }).finally(function () { $('btnSnScan').disabled = false; }); });
+  $('btnSnScan').addEventListener('click', async function () { var a = $('snAddr').value.trim().toLowerCase(); if (/\.stark$/.test(a)) { try { log(t('resolving') + ' · ' + a); a = await resolveStarkName(a); $('snAddr').value = a; log(t('resolved') + ' · ' + a, 'ok'); } catch (e) { log(errMsg(e), 'bad'); return; } } if (!/^0x[0-9a-f]{50,64}$/.test(a)) { log(t('sn_bad_addr'), 'bad'); return; } try { localStorage.setItem('wrc_sn_addr', a); } catch (e) { /* none */ } $('btnSnScan').disabled = true; snScan(a).catch(function (e) { log(t('err') + ': ' + errMsg(e), 'bad'); }).finally(function () { $('btnSnScan').disabled = false; }); });
   $('btnSnConnect').addEventListener('click', snConnect);
   $('snAddr').addEventListener('input', function () { $('snIdent').innerHTML = identicon($('snAddr').value.trim()); });
   try { var savedSn = localStorage.getItem('wrc_sn_addr'); if (savedSn) { $('snAddr').value = savedSn; $('snIdent').innerHTML = identicon(savedSn); } } catch (e) { /* none */ }
@@ -871,6 +893,301 @@
   $('langEn').addEventListener('click', function () { LANG = 'en'; try { localStorage.setItem('wrc_lang', 'en'); } catch (e) { /* none */ } applyLang(); });
   $('addr').addEventListener('input', function () { $('ident').innerHTML = identicon(addrInput()); });
   try { var saved = localStorage.getItem('wrc_addr'); if (saved) $('addr').value = saved; if (USER_ETH_KEY) { $('ethKey').value = USER_ETH_KEY; $('keyBox').open = true; } } catch (e) { /* none */ }
+  // keccak-256 (the Ethereum variant of Keccak, 0x01 padding); used for ENS namehash
+  var KECCAK_RC = [0x1n, 0x8082n, 0x800000000000808an, 0x8000000080008000n, 0x808bn, 0x80000001n, 0x8000000080008081n, 0x8000000000008009n, 0x8an, 0x88n, 0x80008009n, 0x8000000an, 0x8000808bn, 0x800000000000008bn, 0x8000000000008089n, 0x8000000000008003n, 0x8000000000008002n, 0x8000000000000080n, 0x800an, 0x800000008000000an, 0x8000000080008081n, 0x8000000000008080n, 0x80000001n, 0x8000000080008008n];
+  var KECCAK_ROT = [[0, 36, 3, 41, 18], [1, 44, 10, 45, 2], [62, 6, 43, 15, 61], [28, 55, 25, 21, 56], [27, 20, 39, 8, 14]];
+  function keccak256(bytes) {
+    var rate = 136, M = (1n << 64n) - 1n, st = [], i, x, y, r;
+    for (i = 0; i < 25; i++) st.push(0n);
+    var padded = new Uint8Array(Math.ceil((bytes.length + 1) / rate) * rate); padded.set(bytes); padded[bytes.length] |= 0x01; padded[padded.length - 1] |= 0x80;
+    function rotl(v, n) { if (!n) return v; var b = BigInt(n); return ((v << b) | (v >> (64n - b))) & M; }
+    for (var off = 0; off < padded.length; off += rate) {
+      for (i = 0; i < rate / 8; i++) { var v = 0n; for (var b = 7; b >= 0; b--) v = (v << 8n) | BigInt(padded[off + i * 8 + b]); st[i] ^= v; }
+      for (r = 0; r < 24; r++) {
+        var C = [], D = [], B = [];
+        for (x = 0; x < 5; x++) C[x] = st[x] ^ st[x + 5] ^ st[x + 10] ^ st[x + 15] ^ st[x + 20];
+        for (x = 0; x < 5; x++) D[x] = C[(x + 4) % 5] ^ rotl(C[(x + 1) % 5], 1);
+        for (i = 0; i < 25; i++) st[i] ^= D[i % 5];
+        for (x = 0; x < 5; x++) for (y = 0; y < 5; y++) B[y + 5 * ((2 * x + 3 * y) % 5)] = rotl(st[x + 5 * y], KECCAK_ROT[x][y]);
+        for (x = 0; x < 5; x++) for (y = 0; y < 5; y++) st[x + 5 * y] = B[x + 5 * y] ^ ((~B[(x + 1) % 5 + 5 * y]) & M & B[(x + 2) % 5 + 5 * y]);
+        st[0] ^= KECCAK_RC[r];
+      }
+    }
+    var out = ''; for (i = 0; i < 4; i++) { var l = st[i]; for (var k = 0; k < 8; k++) { out += ('0' + Number(l & 0xffn).toString(16)).slice(-2); l >>= 8n; } }
+    return out;
+  }
+  function utf8(s) { return new TextEncoder().encode(s); }
+  function hexBytes(h) { h = h.replace(/^0x/, ''); var a = new Uint8Array(h.length / 2); for (var i = 0; i < a.length; i++) a[i] = parseInt(h.substr(i * 2, 2), 16); return a; }
+  function keccakHex(s) { return keccak256(utf8(s)); }
+  function namehash(name) { var node = '0'.repeat(64), labels = name.toLowerCase().split('.').reverse(); for (var i = 0; i < labels.length; i++) if (labels[i]) node = keccak256(hexBytes(node + keccakHex(labels[i]))); return node; }
+
+  // ============================================================ names: ENS through the registry on Ethereum, Starknet ID through the naming contract
+  var ENS_REGISTRY = '0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e', SN_NAMING = '0x6ac597f8116f886fa1c97a23fa4e08299975ecaf6b598873ca6792b9bbfb678', SN_BASIC = 'abcdefghijklmnopqrstuvwxyz0123456789-', SN_BIG = '这来';
+  async function resolveEvmName(name) {
+    var node = namehash(name), res = await call(CHAIN.ethereum, ENS_REGISTRY, '0x0178b8bf' + node), resolver = '0x' + String(res || '').slice(-40);
+    if (!/^0x[0-9a-f]{40}$/.test(resolver) || /^0x0{40}$/.test(resolver)) throw new Error(t('name_none', { name: name }));
+    var a = await call(CHAIN.ethereum, resolver, '0x3b3b57de' + node), out = '0x' + String(a || '').slice(-40);
+    if (!/^0x[0-9a-f]{40}$/.test(out) || /^0x0{40}$/.test(out)) throw new Error(t('name_none', { name: name }));
+    return out;
+  }
+  function snEncodeLabel(d) {
+    var e = 0n, m = 1n;
+    for (var i = 0; i < d.length; i++) { var ch = d[i], idx = SN_BASIC.indexOf(ch); if (idx >= 0) { if (i === d.length - 1 && ch === 'a') { e += m * 37n; m *= 38n; } else { e += m * BigInt(idx); m *= 38n; } } else { var bi = SN_BIG.indexOf(ch); if (bi < 0) throw new Error(t('name_chars')); e += m * 37n; m *= 38n; e += m * BigInt(bi + 1); m *= 3n; } }
+    return e;
+  }
+  async function resolveStarkName(name) {
+    var labels = name.toLowerCase().replace(/\.stark$/, '').split('.'), felts = labels.map(function (l) { return '0x' + snEncodeLabel(l).toString(16); });
+    var r = await snCall(SN_NAMING, '0x2e269d930f6d7ab92b15ce8ff9f5e63709391617e3465fff79ba6baf278ce60', ['0x' + felts.length.toString(16)].concat(felts).concat(['0x0'])), a = r && r[0];
+    if (!a || /^0x0+$/.test(a)) throw new Error(t('name_none', { name: name }));
+    return '0x' + BigInt(a).toString(16).padStart(64, '0');
+  }
+
+  // ============================================================ scan history (per address, this browser only) + export
+  function histKey(addr) { return 'wrc_hist_' + addr.toLowerCase(); }
+  function itemKey(i) { return [i.chain, i.kind || '', i.label].join('|'); }
+  function loadHistory(addr) { try { var raw = localStorage.getItem(histKey(addr)); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
+  function saveHistory(st) {
+    if (!st || st.status !== 'done') return;
+    var snap = { ts: st.updated, items: st.items.filter(function (i) { return i.status !== 'token'; }).map(function (i) { return { k: itemKey(i), amount: i.amount, usd: i.usd, status: i.status }; }), native: st.natives.reduce(function (s, n) { return s + (n.usd || 0); }, 0) };
+    try { localStorage.setItem(histKey(st.address), JSON.stringify(snap)); } catch (e) { /* storage full or blocked */ }
+  }
+  function applyHistory(st) {
+    var prev = loadHistory(st.address); if (!prev || !prev.ts || prev.ts === st.updated) return null;
+    var seen = {}; prev.items.forEach(function (p) { seen[p.k] = p; });
+    var fresh = 0, gone = [], cur = {};
+    st.items.forEach(function (i) { if (i.status === 'token') return; var k = itemKey(i); cur[k] = 1; if (!seen[k]) { i.isNew = true; fresh++; } });
+    prev.items.forEach(function (p) { if (!cur[p.k]) gone.push(p); });
+    return { ts: prev.ts, fresh: fresh, gone: gone };
+  }
+  function csvCell(v) { var s = v == null ? '' : String(v); return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function exportFindings(kind) {
+    if (!STATE || !STATE.items.length) { log(t('export_empty'), 'warn'); return; }
+    var rows = STATE.items.map(function (i) { return { status: i.status, chain: i.chain_name || i.chain, asset: i.label, amount: i.amount, usd: i.usd == null ? '' : Number(i.usd).toFixed(2), note: i.note || '', link: i.explorer || '' }; });
+    STATE.natives.forEach(function (n) { if (n.amount > 0) rows.push({ status: 'native', chain: n.name, asset: n.sym, amount: n.amount, usd: n.usd == null ? '' : Number(n.usd).toFixed(2), note: '', link: '' }); });
+    var name = 'wallet-recovery-' + STATE.address.slice(0, 10) + '-' + new Date(STATE.updated).toISOString().slice(0, 10), blob;
+    if (kind === 'json') blob = new Blob([JSON.stringify({ address: STATE.address, scanned: new Date(STATE.updated).toISOString(), coverage: STATE.coverage, findings: rows }, null, 2)], { type: 'application/json' });
+    else { var head = ['status', 'chain', 'asset', 'amount', 'usd', 'note', 'link']; blob = new Blob(['﻿' + head.join(';') + '\n' + rows.map(function (r) { return head.map(function (h) { return csvCell(r[h]); }).join(';'); }).join('\n')], { type: 'text/csv;charset=utf-8' }); }
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + (kind === 'json' ? '.json' : '.csv'); document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    log(t('exported') + ' · ' + a.download, 'ok');
+  }
+
+  // ============================================================ bridge transfers that did not complete (LayerZero Scan + Across, both keyless)
+  async function bridgeScan(address, item) {
+    var found = 0;
+    try {
+      var r = await fetch('https://scan.layerzero-api.com/v1/messages/wallet/' + address + '?limit=100', { signal: withTimeout(20000) }), j = await r.json(), msgs = (j && j.data) || [];
+      msgs.forEach(function (m) {
+        var status = ((m.status || {}).name || '').toUpperCase(), src = m.source || {}, tx = src.tx || {}, path = m.pathway || {}, age = tx.blockTimestamp ? (Date.now() / 1000 - tx.blockTimestamp) : 0;
+        if (status === 'DELIVERED' || ((status === 'INFLIGHT' || status === 'CONFIRMING') && age < 3600)) return;
+        var from = (path.sender || {}).chain || '?', to = (path.receiver || {}).chain || '?', app = (path.sender || {}).name || 'LayerZero';
+        found++;
+        item({ chain: 'bridge', chain_name: 'LayerZero', kind: 'bridge', status: 'info', label: app + ' · ' + from + ' → ' + to + ' · ' + status, amount: '', usd: null, note: (tx.blockTimestamp ? new Date(tx.blockTimestamp * 1000).toISOString().slice(0, 10) + ' · ' : '') + t('lz_note_' + (status === 'FAILED' || status === 'BLOCKED' ? 'failed' : status === 'PAYLOAD_STORED' ? 'stored' : 'inflight')), explorer: 'https://layerzeroscan.com/tx/' + (tx.txHash || '') });
+      });
+    } catch (e) { log('LayerZero: ' + errMsg(e), 'warn'); }
+    try {
+      var a = await fetch('https://app.across.to/api/deposits?depositor=' + address + '&limit=100', { signal: withTimeout(20000) }), deps = await a.json();
+      (Array.isArray(deps) ? deps : []).forEach(function (d) {
+        var s = String(d.status || '').toLowerCase(); if (s === 'filled' || s === 'refunded') return;
+        var chain = CHAINS.filter(function (c) { return c.id === Number(d.originChainId); })[0], dest = CHAINS.filter(function (c) { return c.id === Number(d.destinationChainId); })[0], when = d.depositBlockTimestamp ? new Date(Number(d.depositBlockTimestamp) * 1000).toISOString().slice(0, 10) : '';
+        found++;
+        item({ chain: chain ? chain.key : 'bridge', chain_name: chain ? chain.name : 'Across', kind: 'bridge', status: 'info', label: 'Across · ' + (chain ? chain.name : d.originChainId) + ' → ' + (dest ? dest.name : d.destinationChainId) + ' · ' + s, amount: d.inputAmount ? (String(d.inputAmount) + ' (raw) ' + String(d.inputToken || '').slice(0, 10) + '…') : '', usd: null, note: when + ' · ' + t(s === 'expired' ? 'across_expired' : 'across_pending'), explorer: 'https://app.across.to/transactions?depositTxHash=' + (d.depositTxHash || '') });
+      });
+    } catch (e) { log('Across: ' + errMsg(e), 'warn'); }
+    return found;
+  }
+
+  // ============================================================ token approvals: spenders that can still move the wallet's tokens, with one-click revoke
+  SEL.allowance = '0xdd62ed3e'; SEL.approve = '0x095ea7b3';
+  var APPROVAL_TOPIC = '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925';
+  var KNOWN_SPENDERS = {
+    '0x000000000022d473030f116ddee9f6b43ac78ba3': 'Permit2',
+    '0x1111111254eeb25477b68fb85ed929f73a960582': '1inch v5',
+    '0x111111125421ca6dc452d289314280a0f8842a65': '1inch v6',
+    '0xdef1c0ded9bec7f1a1670819833240f027b25eff': '0x Exchange Proxy',
+    '0x216b4b4ba9f3e719726886d34a177484278bfcae': 'Paraswap',
+    '0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae': 'LI.FI',
+    '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': 'Uniswap SwapRouter02',
+    '0x2626664c2603336e57b271c5c0b26f421741e481': 'Uniswap SwapRouter02',
+    '0xe592427a0aece92de3edee1f18e0157c05861564': 'Uniswap SwapRouter',
+    '0x7a250d5630b4cf539739df2c5dacb4c659f2488d': 'Uniswap V2 Router',
+    '0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f': 'SushiSwap Router',
+    '0x1e0049783f008a0085193e00003d00cd54003c71': 'OpenSea Conduit'
+  };
+  Object.keys(FACTORY_ROUTERS).forEach(function (f) { var r = (FACTORY_ROUTERS[f].router || '').toLowerCase(); if (r && !KNOWN_SPENDERS[r]) KNOWN_SPENDERS[r] = 'DEX router'; });
+  var UNLIMITED = 1n << 128n;
+  var APPR = { status: 'idle', rows: [], scanned: 0, discovery: {} };
+  async function approvalLogs(c, owner, out) {
+    var padded = '0x' + wa(owner), rung = c.sources.filter(function (s) { return s.indexOf('logs') === 0; })[0], parts = rung ? rung.split(':') : null;
+    var win = parts && parts[1] ? Number(parts[1]) : 0, maxW = parts && parts[2] ? Number(parts[2]) : 0, seen = {};
+    function add(logs) { (logs || []).forEach(function (l) { if (!l.topics || l.topics.length !== 3 || String(l.data || '').length !== 66) return; var token = String(l.address).toLowerCase(), spender = '0x' + String(l.topics[2]).slice(-40).toLowerCase(), k = token + spender; if (!seen[k]) { seen[k] = 1; out.pairs.push({ token: token, spender: spender }); } }); }
+    if (!win) { try { add(await rpc(c, 'eth_getLogs', [{ fromBlock: '0x0', toBlock: 'latest', topics: [APPROVAL_TOPIC, padded] }])); out.mode = 'full'; return; } catch (e) { if (!parts) return; } }
+    if (!win) return;
+    var to = Number(BigInt(await rpc(c, 'eth_blockNumber', []))) - 30;
+    var shrink = 0;
+    for (var i = 0; i < maxW && to > 0 && !STOP; i++) {
+      var from = Math.max(0, to - win + 1);
+      try { add(await rpc(c, 'eth_getLogs', [{ fromBlock: '0x' + from.toString(16), toBlock: '0x' + to.toString(16), topics: [APPROVAL_TOPIC, padded] }])); out.mode = 'window'; out.blocks = (out.blocks || 0) + (to - from + 1); }
+      catch (e) { if (win > 1000 && shrink < 6) { win = Math.floor(win / 2); shrink++; i--; continue; } break; }
+      to = from - 1; await sleep(120);
+    }
+  }
+  async function approvalScan(address) {
+    APPR = { status: 'running', rows: [], scanned: 0, discovery: {} }; renderApprovals();
+    var held = {}; (STATE ? STATE.items : []).forEach(function (i) { if (i.status === 'token' && i.token) (held[i.chain] = held[i.chain] || []).push(i.token.toLowerCase()); });
+    var lim = limiter(6);
+    await Promise.all(CHAINS.map(function (c) { return lim(async function () {
+      if (STOP) return; var cov = STATE && STATE.coverage[c.key]; if (!cov || cov.level === 'pending') { APPR.scanned++; return; }
+      var disc = { pairs: [], mode: 'none' }; try { await withDeadline(approvalLogs(c, address, disc), 150000, c.name); } catch (e) { /* keep what was collected before the deadline */ }
+      APPR.discovery[c.key] = disc.mode;
+      var pairs = disc.pairs.slice(), seen = {}; pairs.forEach(function (p) { seen[p.token + p.spender] = 1; });
+      (held[c.key] || []).forEach(function (tok) { Object.keys(KNOWN_SPENDERS).forEach(function (sp) { if (!seen[tok + sp]) { seen[tok + sp] = 1; pairs.push({ token: tok, spender: sp }); } }); });
+      for (var i = 0; i < pairs.length && !STOP; i++) {
+        var p = pairs[i];
+        try {
+          var v = BigInt(await call(c, p.token, SEL.allowance + wa(address) + wa(p.spender)) || '0x0'); if (v === 0n) continue;
+          var meta = await erc20Meta(c, p.token), bal = 0n; try { bal = BigInt(await call(c, p.token, SEL.balanceOf + wa(address))); } catch (e) { /* balance optional */ }
+          APPR.rows.push({ id: 'ap' + c.key + i, chain: c.key, chain_name: c.name, token: p.token, symbol: meta.sym, decimals: meta.dec, spender: p.spender, spenderName: KNOWN_SPENDERS[p.spender] || '', allowance: v, unlimited: v >= UNLIMITED, balance: bal, tokenLink: c.explorer + '/token/' + p.token + '?a=' + address, spenderLink: c.explorer + '/address/' + p.spender });
+        } catch (e) { /* not an ERC-20 or the call failed */ }
+      }
+      APPR.scanned++; renderApprovals();
+    }); }));
+    APPR.status = STOP ? 'stopped' : 'done'; renderApprovals();
+    log(t('appr_log', { n: APPR.rows.length, u: APPR.rows.filter(function (r) { return r.unlimited; }).length }), APPR.rows.some(function (r) { return r.unlimited && r.balance > 0n; }) ? 'warn' : 'ok');
+  }
+  function renderApprovals() {
+    var rows = APPR.rows.slice().sort(function (a, b) { var ra = (a.unlimited ? 2 : 0) + (a.balance > 0n ? 1 : 0), rb = (b.unlimited ? 2 : 0) + (b.balance > 0n ? 1 : 0); return rb - ra; });
+    $('cntAppr').textContent = rows.length;
+    var keys = Object.keys(APPR.discovery), full = keys.filter(function (k) { return APPR.discovery[k] === 'full'; }).length, win = keys.filter(function (k) { return APPR.discovery[k] === 'window'; }).length;
+    $('apprStatus').textContent = APPR.status === 'idle' ? t('appr_idle') : APPR.status === 'running' ? (t('scanning') + ' · ' + APPR.scanned + '/' + CHAINS.length + ' ' + t('chains')) : t('appr_done', { full: full, win: win, none: keys.length - full - win });
+    $('btnApprScan').disabled = APPR.status === 'running' || !STATE || STATE.status === 'running';
+    var shown = APPR.showAll ? rows : rows.slice(0, 40);
+    $('apprBody').innerHTML = shown.map(function (r) {
+      var amt = r.unlimited ? '<span class="pill warn">' + t('unlimited') + '</span>' : esc(fmtAmt(r.allowance, r.decimals) + ' ' + r.symbol);
+      var held = r.balance > 0n ? esc(fmtAmt(r.balance, r.decimals) + ' ' + r.symbol) : '<span class="dim">0</span>';
+      var go = function (href) { return ' <a class="go" target="_blank" rel="noopener" href="' + esc(href) + '">' + t('btn_go') + ' <span>↗</span></a>'; };
+      return '<tr><td>' + chainCell(r.chain, r.chain_name) + '</td><td>' + esc(r.symbol) + go(r.tokenLink) + '</td><td>' + esc(r.spenderName || (r.spender.slice(0, 8) + '…' + r.spender.slice(-4))) + go(r.spenderLink) + '</td><td class="num">' + amt + '</td><td class="num">' + held + '</td><td class="num"><button class="btn primary sm" data-rev="' + esc(r.id) + '">' + t('btn_revoke') + '</button></td></tr>';
+    }).join('') + (rows.length > shown.length ? '<tr><td colspan="6" class="empty"><button class="btn ghost sm" id="btnApprMore">' + t('appr_more', { n: rows.length - shown.length }) + '</button></td></tr>' : '');
+    $('apprEmpty').style.display = rows.length ? 'none' : ''; $('apprEmpty').textContent = APPR.status === 'done' ? t('none_appr') : (APPR.status === 'running' ? t('scanning') : t('appr_hint'));
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-rev]'), function (b) { b.addEventListener('click', function () { revoke(b.getAttribute('data-rev'), b); }); });
+    var more = $('btnApprMore'); if (more && more.addEventListener) more.addEventListener('click', function () { APPR.showAll = true; renderApprovals(); });
+  }
+  async function revoke(rowId, btn) {
+    var e = currentProvider(); if (!e) { log(t('no_wallet'), 'bad'); return; }
+    if (!ADDR) await connect(); if (!ADDR || ADDR.toLowerCase() !== addrInput()) { log(t('wrong_wallet'), 'bad'); return; }
+    var r = APPR.rows.filter(function (x) { return x.id === rowId; })[0]; if (!r) return; var c = CHAIN[r.chain]; btn.disabled = true;
+    try {
+      await ensureChain(c);
+      var step = { to: r.token, data: SEL.approve + wa(r.spender) + w(0), value: '0x0' }, pf = await preflight(c, step, ADDR);
+      if (!pf.ok) { log(t('preflight_fail', { reason: pf.reason }), 'bad'); btn.disabled = false; return; }
+      var txp = { from: ADDR, to: step.to, data: step.data, value: step.value }; if (pf.gas) txp.gas = pf.gas;
+      var hash = await e.request({ method: 'eth_sendTransaction', params: [txp] }); log(t('sent') + ' · ' + c.explorer + '/tx/' + hash, 'ok');
+      var rc = await waitReceipt(c, hash); if (!rc) { log(t('no_receipt'), 'warn'); btn.disabled = false; return; }
+      if (rc.status !== '0x1') { log(t('reverted'), 'bad'); btn.disabled = false; return; }
+      var v = BigInt(await call(c, r.token, SEL.allowance + wa(ADDR) + wa(r.spender)) || '0x0');
+      if (v === 0n) { APPR.rows = APPR.rows.filter(function (x) { return x.id !== rowId; }); log(t('revoked') + ' · ' + r.symbol + ' → ' + (r.spenderName || r.spender.slice(0, 10)), 'ok'); }
+      else { r.allowance = v; r.unlimited = v >= UNLIMITED; log(t('revoke_partial'), 'warn'); }
+      renderApprovals();
+    } catch (ex) { log((ex && ex.code === 4001) ? t('rejected') : (t('err') + ': ' + (ex.message || ex)), 'bad'); btn.disabled = false; }
+  }
+
+  // ============================================================ Solana: token accounts that hold nothing but still lock rent; closing them returns the SOL
+  var SOL = { rpcs: ['https://api.mainnet-beta.solana.com', 'https://solana-rpc.publicnode.com'], custom: '', status: 'idle', address: '', balance: 0, price: null, empties: [], held: [], wallet: null, account: null, err: '' };
+  var SOL_TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', SOL_TOKEN22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  try { SOL.custom = localStorage.getItem('wrc_solrpc') || ''; } catch (e) { /* none */ }
+  function b58decode(s) { var n = 0n, i, out = []; for (i = 0; i < s.length; i++) { var d = B58.indexOf(s[i]); if (d < 0) throw new Error('base58'); n = n * 58n + BigInt(d); } while (n > 0n) { out.push(Number(n & 0xffn)); n >>= 8n; } for (i = 0; i < s.length && s[i] === '1'; i++) out.push(0); return Uint8Array.from(out.reverse()); }
+  function b58encode(bytes) { var n = 0n, i, s = ''; for (i = 0; i < bytes.length; i++) n = (n << 8n) | BigInt(bytes[i]); while (n > 0n) { s = B58[Number(n % 58n)] + s; n /= 58n; } for (i = 0; i < bytes.length && bytes[i] === 0; i++) s = '1' + s; return s; }
+  function cu16(n) { var out = []; do { var b = n & 0x7f; n >>= 7; if (n) b |= 0x80; out.push(b); } while (n); return out; }
+  function b64(bytes) { var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s); }
+  function isSolAddr(s) { try { return b58decode(s).length === 32; } catch (e) { return false; } }
+  async function solRpc(method, params) {
+    var urls = (SOL.custom ? [SOL.custom] : []).concat(SOL.rpcs), last = 'no rpc';
+    for (var i = 0; i < urls.length; i++) { try { var r = await fetch(urls[i], { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params }), signal: withTimeout(20000) }); var j = await r.json(); if (j.error) { last = new Error(urls[i].replace(/^https:\/\//, '').split('/')[0] + ': ' + (j.error.message || JSON.stringify(j.error))); continue; } return j.result; } catch (e) { last = e; } }
+    throw (last instanceof Error ? last : new Error(String(last)));
+  }
+  function solClosable(a) { return !a.frozen && (!a.closeAuthority || a.closeAuthority === SOL.address); }
+  async function solScan(owner) {
+    SOL.status = 'running'; SOL.err = ''; SOL.address = owner; SOL.empties = []; SOL.held = []; renderSol();
+    try {
+      if (!isSolAddr(owner)) throw new Error(t('sol_bad_addr'));
+      SOL.balance = Number((await solRpc('getBalance', [owner])).value) / 1e9;
+      try { var px = await llama(['coingecko:solana']); SOL.price = px['coingecko:solana'] || null; } catch (e) { SOL.price = null; }
+      for (var p = 0; p < 2; p++) {
+        var prog = p ? SOL_TOKEN22 : SOL_TOKEN, res = await solRpc('getTokenAccountsByOwner', [owner, { programId: prog }, { encoding: 'jsonParsed' }]);
+        (res.value || []).forEach(function (a) { var info = a.account.data.parsed.info, amt = info.tokenAmount, row = { pubkey: a.pubkey, mint: info.mint, lamports: Number(a.account.lamports), ui: amt.uiAmountString, decimals: amt.decimals, prog: prog, closeAuthority: info.closeAuthority || null, frozen: info.state === 'frozen' }; (amt.amount === '0' ? SOL.empties : SOL.held).push(row); });
+      }
+      SOL.status = 'done';
+    } catch (e) { SOL.status = 'error'; SOL.err = errMsg(e); }
+    renderSol();
+  }
+  function solCloseTx(owner, accounts, blockhash) {
+    var keys = [owner].concat(accounts.map(function (a) { return a.pubkey; })).concat([accounts[0].prog]), msg = [1, 0, 1].concat(cu16(keys.length));
+    keys.forEach(function (k) { msg = msg.concat(Array.from(b58decode(k))); });
+    msg = msg.concat(Array.from(b58decode(blockhash))).concat(cu16(accounts.length));
+    accounts.forEach(function (a, i) { msg = msg.concat([keys.length - 1]).concat(cu16(3)).concat([1 + i, 0, 0]).concat(cu16(1)).concat([9]); });
+    return { message: Uint8Array.from(msg), tx: Uint8Array.from([1].concat(new Array(64).fill(0)).concat(msg)) };
+  }
+  function solWallets() {
+    var list = [], api = { register: function () { for (var i = 0; i < arguments.length; i++) if (list.indexOf(arguments[i]) < 0) list.push(arguments[i]); return function () {}; }, get: function () { return list.slice(); }, on: function () { return function () {}; } };
+    try { window.addEventListener('wallet-standard:register-wallet', function (ev) { try { ev.detail(api); } catch (e) { /* wallet declined */ } }); window.dispatchEvent(new CustomEvent('wallet-standard:app-ready', { detail: api })); } catch (e) { /* none */ }
+    return list.filter(function (w) { return w.chains && w.chains.some(function (c) { return String(c).indexOf('solana:') === 0; }) && w.features && w.features['standard:connect'] && w.features['solana:signAndSendTransaction']; });
+  }
+  async function solConnect() {
+    try {
+      var ws = solWallets(), w = ws[0];
+      if (w) { var res = await w.features['standard:connect'].connect(), acc = (res.accounts || []).filter(function (a) { return (a.chains || []).indexOf('solana:mainnet') >= 0; })[0] || (res.accounts || [])[0]; if (!acc) throw new Error(t('sol_no_wallet')); SOL.wallet = { std: w, acc: acc, name: w.name }; SOL.account = acc.address; }
+      else if (window.solana && window.solana.connect) { var r = await window.solana.connect(); SOL.wallet = { legacy: window.solana, name: window.solana.isPhantom ? 'Phantom' : 'Solana wallet' }; SOL.account = r.publicKey.toString(); }
+      else throw new Error(t('sol_no_wallet'));
+      var ok = SOL.account === SOL.address; $('solWalletInfo').textContent = SOL.wallet.name + ' · ' + SOL.account.slice(0, 4) + '…' + SOL.account.slice(-4) + ' ' + (ok ? t('scanned_addr') : t('different')); $('solWalletInfo').style.color = ok ? 'var(--ok)' : 'var(--bad)';
+      log(t('connected') + ' · ' + SOL.account, 'ok');
+    } catch (e) { log(t('err') + ': ' + errMsg(e), 'bad'); }
+  }
+  async function solSign(built) {
+    var w = SOL.wallet;
+    if (w.std) { var out = await w.std.features['solana:signAndSendTransaction'].signAndSendTransaction({ transaction: built.tx, account: w.acc, chain: 'solana:mainnet' }); return b58encode(out[0].signature); }
+    var r = await w.legacy.request({ method: 'signAndSendTransaction', params: { message: b58encode(built.message) } }); return r.signature;
+  }
+  async function solClose(btn) {
+    if (!SOL.wallet) await solConnect(); if (!SOL.wallet) return;
+    if (SOL.account !== SOL.address) { log(t('wrong_wallet'), 'bad'); return; }
+    var all = SOL.empties.filter(solClosable); if (!all.length) return; var total = Math.ceil(all.length / 25), batch = 0;
+    btn.disabled = true;
+    try {
+      while (!STOP) {
+        var pending = SOL.empties.filter(solClosable); if (!pending.length) break;
+        var prog = pending[0].prog, list = pending.filter(function (a) { return a.prog === prog; }).slice(0, 25); batch++;
+        var bh = (await solRpc('getLatestBlockhash', [{ commitment: 'finalized' }])).value.blockhash, built = solCloseTx(SOL.address, list, bh);
+        var sim = await solRpc('simulateTransaction', [b64(built.tx), { sigVerify: false, replaceRecentBlockhash: true, encoding: 'base64' }]);
+        if (!sim || !sim.value || sim.value.err) throw new Error(t('preflight_fail', { reason: JSON.stringify(sim && sim.value ? sim.value.err : 'no simulation') + ' ' + (((sim && sim.value && sim.value.logs) || []).slice(-1)[0] || '') }));
+        log(t('sol_closing', { n: list.length }) + ' · ' + batch + '/' + total);
+        var sig = await solSign(built); log(t('sent') + ' · https://solscan.io/tx/' + sig, 'ok');
+        var ok = false; for (var i = 0; i < 30; i++) { await sleep(2000); var st = await solRpc('getSignatureStatuses', [[sig]]), v = st && st.value && st.value[0]; if (v && (v.confirmationStatus === 'confirmed' || v.confirmationStatus === 'finalized')) { if (v.err) throw new Error(t('reverted')); ok = true; break; } }
+        if (!ok) { log(t('no_receipt'), 'warn'); break; }
+        var closed = {}; list.forEach(function (a) { closed[a.pubkey] = 1; }); SOL.empties = SOL.empties.filter(function (a) { return !closed[a.pubkey]; }); SOL.balance += list.reduce(function (s, a) { return s + a.lamports; }, 0) / 1e9;
+        log(t('confirmed') + ' · ' + list.length + ' · ' + fnum(list.reduce(function (s, a) { return s + a.lamports; }, 0) / 1e9, 5) + ' SOL', 'ok'); renderSol();
+      }
+      setTimeout(function () { solScan(SOL.address); }, 3000);
+    } catch (ex) { log((ex && ex.code === 4001) || /reject/i.test(errMsg(ex)) ? t('rejected') : (t('err') + ': ' + errMsg(ex)), 'bad'); renderSol(); }
+  }
+  function renderSol() {
+    var closable = SOL.empties.filter(solClosable), rent = closable.reduce(function (s, a) { return s + a.lamports; }, 0) / 1e9, usdv = SOL.price ? rent * SOL.price : null;
+    $('cntSol').textContent = closable.length;
+    $('solStatus').textContent = SOL.status === 'idle' ? t('sol_idle') : SOL.status === 'running' ? t('scanning') : SOL.status === 'error' ? (t('err') + ': ' + SOL.err + ' · ' + t('sol_rpc_hint')) : t('sol_done', { bal: fnum(SOL.balance, 4), n: closable.length, sol: fnum(rent, 5), usd: usdv != null ? usd(usdv) : '?', held: SOL.held.length });
+    var rows = [];
+    if (closable.length) rows.push('<tr><td>' + t('sol_empty_accounts', { n: closable.length }) + '</td><td class="num">' + fnum(rent, 5) + ' SOL</td><td class="num">' + usd(usdv) + '</td><td class="note">' + t('sol_note_close') + '</td><td class="num"><button class="btn primary sm" id="btnSolClose">' + t('btn_sol_close') + (closable.length > 25 ? ' · ' + Math.ceil(closable.length / 25) + ' tx' : '') + '</button></td></tr>');
+    SOL.held.slice(0, 40).forEach(function (h) { rows.push('<tr><td>' + esc(h.mint.slice(0, 6) + '…' + h.mint.slice(-4)) + ' <a class="go" target="_blank" rel="noopener" href="https://solscan.io/token/' + esc(h.mint) + '">' + t('btn_go') + ' <span>↗</span></a></td><td class="num">' + esc(h.ui) + '</td><td class="num"></td><td class="note">' + t('note_token') + '</td><td></td></tr>'); });
+    $('solBody').innerHTML = rows.join(''); $('solEmpty').style.display = rows.length ? 'none' : ''; $('solEmpty').textContent = SOL.status === 'done' ? t('sol_none') : '';
+    var b = $('btnSolClose'); if (b && b.addEventListener) b.addEventListener('click', function () { solClose(b); });
+  }
+
+  // wiring: approvals, exports, Solana
+  $('btnApprScan').addEventListener('click', function () { var a = addrInput(); if (/^0x[0-9a-f]{40}$/.test(a) && STATE && STATE.status === 'done') approvalScan(a).catch(function (e) { log(t('err') + ': ' + errMsg(e), 'bad'); }); });
+  $('btnCsv').addEventListener('click', function () { exportFindings('csv'); }); $('btnJson').addEventListener('click', function () { exportFindings('json'); });
+  $('btnSolScan').addEventListener('click', function () { var a = $('solAddr').value.trim(); if (!isSolAddr(a)) { log(t('sol_bad_addr'), 'bad'); return; } try { localStorage.setItem('wrc_sol_addr', a); } catch (e) { /* none */ } solScan(a); });
+  $('btnSolConnect').addEventListener('click', solConnect);
+  $('btnSolRpcSave').addEventListener('click', function () { SOL.custom = $('solRpc').value.trim(); try { if (SOL.custom) localStorage.setItem('wrc_solrpc', SOL.custom); else localStorage.removeItem('wrc_solrpc'); } catch (e) { /* none */ } log(SOL.custom ? t('key_saved') : t('key_cleared'), 'ok'); });
+  try { var savedSol = localStorage.getItem('wrc_sol_addr'); if (savedSol) $('solAddr').value = savedSol; if (SOL.custom) $('solRpc').value = SOL.custom; } catch (e) { /* none */ }
+  renderApprovals(); renderSol();
+
   var qs = new URLSearchParams(location.search); if (/^0x[0-9a-fA-F]{40}$/.test(qs.get('address') || '')) $('addr').value = qs.get('address').toLowerCase();
   $('ident').innerHTML = identicon(addrInput());
   applyLang();
