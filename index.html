@@ -263,19 +263,19 @@
     ['ethereum', 1, 'Ethereum', 'ETH', ['https://ethereum-rpc.publicnode.com', 'https://eth.llamarpc.com'], 'https://etherscan.io', 'ethereum', ['bs:https://eth.blockscout.com', 'es'], 'ethereum'],
     ['base', 8453, 'Base', 'ETH', ['https://base-rpc.publicnode.com', 'https://mainnet.base.org'], 'https://basescan.org', 'ethereum', ['bs:https://base.blockscout.com', 'es'], 'base'],
     ['arbitrum', 42161, 'Arbitrum One', 'ETH', ['https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc'], 'https://arbiscan.io', 'ethereum', ['bs:https://arbitrum.blockscout.com', 'es'], 'arbitrum-one'],
-    ['optimism', 10, 'Optimism', 'ETH', ['https://optimism-rpc.publicnode.com', 'https://mainnet.optimism.io'], 'https://optimistic.etherscan.io', 'ethereum', ['bs:https://optimism.blockscout.com', 'es'], 'optimistic-ethereum'],
+    ['optimism', 10, 'Optimism', 'ETH', ['https://optimism-rpc.publicnode.com', 'https://mainnet.optimism.io'], 'https://optimistic.etherscan.io', 'ethereum', ['bs:https://explorer.optimism.io', 'es'], 'optimistic-ethereum'],
     ['polygon', 137, 'Polygon', 'POL', ['https://polygon-bor-rpc.publicnode.com', 'https://polygon-rpc.com'], 'https://polygonscan.com', 'polygon-ecosystem-token', ['bs:https://polygon.blockscout.com', 'es'], 'polygon-pos'],
     ['zksync', 324, 'zkSync Era', 'ETH', ['https://mainnet.era.zksync.io'], 'https://explorer.zksync.io', 'ethereum', ['bs:https://zksync.blockscout.com'], 'zksync'],
     ['linea', 59144, 'Linea', 'ETH', ['https://linea-rpc.publicnode.com', 'https://rpc.linea.build'], 'https://lineascan.build', 'ethereum', ['bs:https://api-explorer.linea.build', 'es'], 'linea'],
-    ['scroll', 534352, 'Scroll', 'ETH', ['https://scroll-rpc.publicnode.com', 'https://rpc.scroll.io'], 'https://scrollscan.com', 'ethereum', ['bs:https://blockscout.scroll.io', 'es', 'logs:50000:40'], 'scroll'],
+    ['scroll', 534352, 'Scroll', 'ETH', ['https://scroll-rpc.publicnode.com', 'https://rpc.scroll.io'], 'https://scrollscan.com', 'ethereum', ['bs:https://scrollscan.com', 'logs:50000:40'], 'scroll'],
     ['mode', 34443, 'Mode', 'ETH', ['https://mainnet.mode.network'], 'https://explorer.mode.network', 'ethereum', ['bs:https://explorer.mode.network'], 'mode'],
     ['manta', 169, 'Manta Pacific', 'ETH', ['https://pacific-rpc.manta.network/http'], 'https://pacific-explorer.manta.network', 'ethereum', ['bs:https://pacific-explorer.manta.network'], 'manta-pacific'],
     ['soneium', 1868, 'Soneium', 'ETH', ['https://rpc.soneium.org'], 'https://soneium.blockscout.com', 'ethereum', ['bs:https://soneium.blockscout.com'], 'soneium'],
     ['lisk', 1135, 'Lisk', 'ETH', ['https://rpc.api.lisk.com'], 'https://blockscout.lisk.com', 'ethereum', ['bs:https://blockscout.lisk.com'], 'lisk'],
     ['celo', 42220, 'Celo', 'CELO', ['https://celo-rpc.publicnode.com', 'https://forno.celo.org'], 'https://celoscan.io', 'celo', ['bs:https://celo.blockscout.com', 'es'], 'celo'],
     ['ink', 57073, 'Ink', 'ETH', ['https://rpc-gel.inkonchain.com'], 'https://explorer.inkonchain.com', 'ethereum', ['bs:https://explorer.inkonchain.com'], 'ink'],
-    ['metis', 1088, 'Metis', 'METIS', ['https://andromeda.metis.io/?owner=1088'], 'https://andromeda-explorer.metis.io', 'metis-token', ['logs'], 'metis-andromeda'],
-    ['gnosis', 100, 'Gnosis', 'xDAI', ['https://rpc.gnosischain.com', 'https://gnosis-rpc.publicnode.com'], 'https://gnosisscan.io', 'xdai', ['bs:https://gnosis.blockscout.com', 'logs', 'es'], 'xdai'],
+    ['metis', 1088, 'Metis', 'METIS', ['https://andromeda.metis.io/?owner=1088', 'https://metis-rpc.publicnode.com'], 'https://andromeda-explorer.metis.io', 'metis-token', ['logs'], 'metis-andromeda'],
+    ['gnosis', 100, 'Gnosis', 'xDAI', ['https://rpc.gnosischain.com', 'https://gnosis-rpc.publicnode.com', 'https://1rpc.io/gnosis', 'https://gnosis.drpc.org'], 'https://gnosisscan.io', 'xdai', ['bs:https://gnosisscan.io', 'logs', 'es'], 'xdai'],
     ['immutable', 13371, 'Immutable zkEVM', 'IMX', ['https://rpc.immutable.com'], 'https://explorer.immutable.com', 'immutable-x', ['bs:https://explorer.immutable.com'], 'immutable'],
     ['unichain', 130, 'Unichain', 'ETH', ['https://unichain-rpc.publicnode.com'], 'https://uniscan.xyz', 'ethereum', ['bs:https://unichain.blockscout.com', 'es'], 'unichain'],
     ['bsc', 56, 'BNB Chain', 'BNB', ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.binance.org'], 'https://bscscan.com', 'binancecoin', ['es'], 'binance-smart-chain'],
@@ -855,7 +855,7 @@
     } catch (ex) { log(snRejected(ex) ? t('rejected') : (t('err') + ': ' + errMsg(ex)), 'bad'); btn.disabled = false; }
   }
 
-  window.__wrc = { runScan: runScan, snScan: snScan, consPlan: consPlan, classify: classify, decodePositions: decodePositions, parseDelayedRedeems: parseDelayedRedeems, buildClWithdraw: buildClWithdraw, buildLpBurn: buildLpBurn, buildRouterRemove: buildRouterRemove, buildSteps: buildSteps, CHAINS: CHAINS, setKey: function (k) { ETH_KEY = k || ''; }, setState: function (s) { STATE = s; }, cons: CONS, i18n: I18N, srcEtherscan: srcEtherscan };
+  window.__wrc = { runScan: runScan, snScan: snScan, consPlan: consPlan, classify: classify, decodePositions: decodePositions, parseDelayedRedeems: parseDelayedRedeems, buildClWithdraw: buildClWithdraw, buildLpBurn: buildLpBurn, buildRouterRemove: buildRouterRemove, buildSteps: buildSteps, CHAINS: CHAINS, setKey: function (k) { ETH_KEY = k || ''; }, setState: function (s) { STATE = s; }, cons: CONS, i18n: I18N, srcEtherscan: srcEtherscan, srcBlockscout: srcBlockscout };
   consInit();
   $('btnConsPlan').addEventListener('click', consPlan);
   $('btnConsAll').addEventListener('click', consSendAll);
