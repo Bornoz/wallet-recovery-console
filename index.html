@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Wallet Recovery Console — 36 EVM ağında unutulmuş likidite, mevduat, kilit ve alınmamış köprü transferlerini bulur; çekilebilenleri tek tıkla çektirir. Sunucusuz, anahtarsız, açık kaynak.">
+<meta name="description" content="Wallet Recovery Console: 37 EVM ağında ve Starknet'te unutulmuş likidite, mevduat, kilit ve alınmamış köprü transferlerini bulur; çekilebilenleri tek tıkla çektirir. Sunucusuz, anahtarsız, açık kaynak.">
 <meta name="theme-color" content="#0b0e14">
 <title>Wallet Recovery Console</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f2c76a'/%3E%3Cstop offset='1' stop-color='%23b9862c'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M14 20l7 24 7-16 7 16 7-24' fill='none' stroke='%231b1403' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='16' r='4' fill='%231b1403'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -87,7 +88,11 @@
   .note { color: var(--muted); font-size: 12.5px; }
   .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
   .pill.warn { background: rgba(245,185,80,.14); color: var(--warn); }
-  .ext { color: var(--faint); margin-left: 6px; font-size: 12px; }
+  .go { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px 0 13px; margin-left: 10px; border-radius: 8px; background: linear-gradient(135deg, var(--gold-2), var(--gold)); color: var(--gold-ink); font: 700 12px/1 var(--font); letter-spacing: .1em; vertical-align: middle; white-space: nowrap; box-shadow: 0 0 0 1px rgba(242,199,106,.4), 0 6px 18px rgba(228,176,74,.32); animation: glow 1.8s ease-in-out infinite; transition: transform .08s, filter .15s; }
+  .go span { font-size: 15px; line-height: 1; }
+  .go:hover { text-decoration: none; filter: brightness(1.1); transform: translateY(-1px); animation: none; box-shadow: 0 0 0 2px rgba(242,199,106,.7), 0 10px 30px rgba(228,176,74,.6); }
+  .go:active { transform: translateY(1px); }
+  @keyframes glow { 0%, 100% { box-shadow: 0 0 0 1px rgba(242,199,106,.4), 0 6px 18px rgba(228,176,74,.32); } 50% { box-shadow: 0 0 0 2px rgba(242,199,106,.7), 0 8px 28px rgba(228,176,74,.62); } }
   .skel td { padding: 14px 18px; } .skel span { display: block; height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--line) 25%, var(--raised) 50%, var(--line) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
   .matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; padding: 14px 18px; }
@@ -112,7 +117,7 @@
 
   <div class="hero">
     <h2 data-i18n="hero_title">Ağlarda unuttuğun varlıkları bul, tek tıkla geri al.</h2>
-    <p data-i18n="hero_text">36 EVM ağı taranır: likidite pozisyonları, mevduatlar, kilitler, vesting'ler, alınmamış köprü transferleri. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.</p>
+    <p data-i18n="hero_text">37 EVM ağı ve Starknet taranır: likidite pozisyonları, mevduatlar, kilitler, vesting'ler, alınmamış köprü transferleri. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.</p>
     <div class="addr-row">
       <div class="addr-wrap"><div class="ident" id="ident"></div><input id="addr" placeholder="0x…" spellcheck="false" autocomplete="off"></div>
       <button id="btnScan" class="btn primary" data-i18n="btn_scan">Tara</button>
@@ -124,11 +129,11 @@
       <span id="walletInfo" data-i18n="wallet_none">cüzdan bağlı değil</span>
     </div>
     <details id="keyBox">
-      <summary data-i18n="key_summary">İsteğe bağlı: Etherscan API anahtarı (ücretsiz) — BNB Chain, opBNB, HyperEVM, Taiko ve Sei için token dizini açar</summary>
+      <summary data-i18n="key_summary">Etherscan API anahtarı: ortak ücretsiz anahtar hazır gelir (opBNB, HyperEVM, Taiko, Sei); sınırına takılırsa kendi ücretsiz anahtarını buraya gir</summary>
       <div class="keyrow">
         <input id="ethKey" placeholder="Etherscan API key" spellcheck="false" autocomplete="off">
         <button id="btnKeySave" class="btn ghost sm" data-i18n="btn_key_save">Kaydet</button>
-        <a href="https://etherscan.io/apis" target="_blank" rel="noopener" data-i18n="key_link">Ücretsiz anahtar al ↗</a>
+        <a class="go" href="https://etherscan.io/apis" target="_blank" rel="noopener" data-i18n="key_link">Ücretsiz anahtar al ↗</a>
         <span class="hint" data-i18n="key_hint">Anahtar yalnız bu tarayıcıda (localStorage) tutulur ve doğrudan Etherscan API'sine gider; başka hiçbir yere gönderilmez.</span>
       </div>
     </details>
@@ -137,28 +142,46 @@
   </div>
 
   <div class="kpis">
-    <div class="kpi gold"><div class="l" data-i18n="kpi_ready">Şimdi çekilebilir</div><div class="v" id="kpiReady">—</div><div class="s" id="kpiReadyS"></div></div>
-    <div class="kpi"><div class="l" data-i18n="kpi_wait">Bekleyen</div><div class="v" id="kpiWait">—</div><div class="s" id="kpiWaitS"></div></div>
-    <div class="kpi"><div class="l" data-i18n="kpi_native">Yerli coin bakiyesi</div><div class="v" id="kpiNative">—</div><div class="s" id="kpiNativeS"></div></div>
-    <div class="kpi"><div class="l" data-i18n="kpi_cov">Kapsam</div><div class="v" id="kpiCov">—</div><div class="s" id="kpiCovS"></div></div>
+    <div class="kpi gold"><div class="l" data-i18n="kpi_ready">Şimdi çekilebilir</div><div class="v" id="kpiReady">·</div><div class="s" id="kpiReadyS"></div></div>
+    <div class="kpi"><div class="l" data-i18n="kpi_wait">Bekleyen</div><div class="v" id="kpiWait">·</div><div class="s" id="kpiWaitS"></div></div>
+    <div class="kpi"><div class="l" data-i18n="kpi_native">Yerli coin bakiyesi</div><div class="v" id="kpiNative">·</div><div class="s" id="kpiNativeS"></div></div>
+    <div class="kpi"><div class="l" data-i18n="kpi_cov">Kapsam</div><div class="v" id="kpiCov">·</div><div class="s" id="kpiCovS"></div></div>
   </div>
 
   <section class="card"><header><h3><span data-i18n="h_ready">Çekilebilir</span> <span class="count" id="cntReady">0</span></h3><span class="sub" data-i18n="h_ready_sub">Tek tıkla; önce simüle edilir, sonra her işlemi cüzdanında onaylarsın</span></header>
-    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_note">Açıklama</th><th></th></tr></thead><tbody id="readyBody"></tbody></table><div id="readyEmpty" class="empty">—</div></div></section>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_note">Açıklama</th><th></th></tr></thead><tbody id="readyBody"></tbody></table><div id="readyEmpty" class="empty"></div></div></section>
 
   <section class="card"><header><h3><span data-i18n="h_wait">Bekleyen</span> <span class="count" id="cntWait">0</span></h3><span class="sub" data-i18n="h_wait_sub">Kilit ya da vesting süresi dolunca çekilebilir</span></header>
-    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_when">Açılış</th><th></th></tr></thead><tbody id="waitBody"></tbody></table><div id="waitEmpty" class="empty">—</div></div></section>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_when">Açılış</th><th></th></tr></thead><tbody id="waitBody"></tbody></table><div id="waitEmpty" class="empty"></div></div></section>
 
   <section class="card"><header><h3><span data-i18n="h_info">Elle işlem</span> <span class="count" id="cntInfo">0</span></h3><span class="sub" data-i18n="h_info_sub">Protokole özgü akış gerektirir; bağlantı doğrudan protokol arayüzüne gider</span></header>
-    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_note">Açıklama</th></tr></thead><tbody id="infoBody"></tbody></table><div id="infoEmpty" class="empty">—</div></div></section>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_note">Açıklama</th></tr></thead><tbody id="infoBody"></tbody></table><div id="infoEmpty" class="empty"></div></div></section>
 
   <section class="card"><header><h3><span data-i18n="h_tokens">Tokenlar</span> <span class="count" id="cntTokens">0</span></h3><span class="sub" data-i18n="h_tokens_sub">Cüzdanda duran, doğrudan takas edilebilir bakiyeler (≥ $1)</span></header>
-    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th></tr></thead><tbody id="tokensBody"></tbody></table><div id="tokensEmpty" class="empty">—</div></div></section>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th></tr></thead><tbody id="tokensBody"></tbody></table><div id="tokensEmpty" class="empty"></div></div></section>
 
   <section class="card"><header><h3><span data-i18n="h_native">Yerli coinler</span> <span class="count" id="cntNative">0</span></h3><span class="sub" id="nativeTotal"></span></header>
-    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th class="num" data-i18n="th_balance">Bakiye</th><th class="num">≈ USD</th><th class="num" data-i18n="th_txs">İşlem</th></tr></thead><tbody id="nativeBody"></tbody></table><div id="nativeEmpty" class="empty">—</div></div></section>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th class="num" data-i18n="th_balance">Bakiye</th><th class="num">≈ USD</th><th class="num" data-i18n="th_txs">İşlem</th></tr></thead><tbody id="nativeBody"></tbody></table><div id="nativeEmpty" class="empty"></div></div></section>
 
-  <section class="card"><header><h3><span data-i18n="h_cov">Kapsam matrisi</span> <span class="count" id="cntCov">36</span></h3><span class="sub" data-i18n="h_cov_sub">Her ağ için kullanılan veri kaynağı ve kapsam düzeyi</span></header>
+  <section class="card" id="consCard"><header><h3><span data-i18n="h_cons">Tek ağda topla</span> <span class="count" id="cntCons">0</span></h3><span class="sub" data-i18n="h_cons_sub">Bakiyeleri seçtiğin ağa ve tokena köprüler (LI.FI); her adım önce simüle edilir</span></header>
+    <div class="matrix" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
+      <label class="cell" style="gap:8px"><span data-i18n="cons_dest">Hedef ağ</span><select id="consChain" class="btn ghost sm" style="margin-left:auto"></select></label>
+      <label class="cell" style="gap:8px"><span data-i18n="cons_token">Hedef varlık</span><select id="consToken" class="btn ghost sm" style="margin-left:auto"><option value="native">ETH / yerli</option><option value="usdc">USDC</option></select></label>
+      <label class="cell" style="gap:8px"><span data-i18n="cons_min">Alt sınır (USD)</span><input id="consMin" type="number" min="0.5" step="0.5" value="2" style="width:80px;margin-left:auto;height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--line-2);background:#0b0f17;color:var(--text)"></label>
+      <div class="cell" style="gap:8px"><button id="btnConsPlan" class="btn primary sm" data-i18n="btn_cons_plan">Planı hesapla</button><button id="btnConsAll" class="btn ghost sm" disabled data-i18n="btn_cons_all">Hepsini gönder</button></div>
+    </div>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_chain">Ağ</th><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Gönderilecek</th><th class="num" data-i18n="cons_receive">Alınacak</th><th class="num" data-i18n="cons_cost">Gaz + ücret</th><th data-i18n="cons_route">Rota</th><th></th></tr></thead><tbody id="consBody"></tbody></table><div id="consEmpty" class="empty" data-i18n="cons_empty">Önce taramayı bitir, sonra hedefi seçip planı hesapla.</div></div>
+  </section>
+
+  <section class="card" id="snCard"><header><h3><span data-i18n="h_sn">Starknet</span> <span class="count" id="cntSn">0</span></h3><span class="sub" data-i18n="h_sn_sub">JediSwap v2 pozisyonları ve STRK staking; Braavos ya da Ready X ile imza</span></header>
+    <div class="matrix" style="grid-template-columns:1fr">
+      <div class="addr-row"><div class="addr-wrap"><div class="ident" id="snIdent"></div><input id="snAddr" placeholder="0x… (Starknet)" spellcheck="false" autocomplete="off"></div><button id="btnSnScan" class="btn primary sm" style="height:48px" data-i18n="btn_scan">Tara</button><button id="btnSnConnect" class="btn ghost sm" style="height:48px" data-i18n="btn_sn_connect">Starknet cüzdanını bağla</button><span id="snWalletInfo" class="dim" data-i18n="wallet_none">cüzdan bağlı değil</span></div>
+      <div id="snStatus" class="dim" data-i18n="sn_idle">Adres gir ve taramayı başlat. İlk tarama 3-5 dakika sürer (737 staking havuzu ve pozisyon geçmişi zincirden okunur).</div>
+    </div>
+    <div class="wrap"><table><thead><tr><th data-i18n="th_what">Varlık</th><th class="num" data-i18n="th_amount">Miktar</th><th class="num">≈ USD</th><th data-i18n="th_note">Açıklama</th><th></th></tr></thead><tbody id="snBody"></tbody></table><div id="snEmpty" class="empty"></div></div>
+  </section>
+
+  <section class="card"><header><h3><span data-i18n="h_cov">Kapsam matrisi</span> <span class="count" id="cntCov">37</span></h3><span class="sub" data-i18n="h_cov_sub">Her ağ için kullanılan veri kaynağı ve kapsam düzeyi</span></header>
     <div class="matrix" id="matrix"></div>
     <div class="legend"><span><i style="background:var(--ok)"></i><span data-i18n="lg_full">Tam: token ve NFT dizini okundu</span></span><span><i style="background:var(--warn)"></i><span data-i18n="lg_partial">Kısmi: sınırlı blok aralığı</span></span><span><i style="background:var(--faint)"></i><span data-i18n="lg_native">Yalnız yerli bakiye</span></span><span><i style="background:var(--bad)"></i><span data-i18n="lg_error">Kaynak cevap vermedi</span></span></div></section>
 
@@ -180,9 +203,9 @@
     tr: {
       tagline: 'Sunucusuz · anahtarsız · açık kaynak',
       hero_title: 'Ağlarda unuttuğun varlıkları bul, tek tıkla geri al.',
-      hero_text: '36 EVM ağı taranır: likidite pozisyonları, mevduatlar, kilitler, vesting’ler, alınmamış köprü transferleri. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.',
+      hero_text: '37 EVM ağı ve Starknet taranır: likidite pozisyonları, mevduatlar, kilitler, vesting’ler, alınmamış köprü transferleri. Miktarlar tahmin değil, cüzdan adına yapılan zincir simülasyonudur. Hiçbir anahtar istenmez; işlemleri yalnız kendi cüzdanın imzalar.',
       btn_scan: 'Tara', btn_stop: 'Durdur', btn_connect: 'Cüzdanı bağla', wallet_none: 'cüzdan bağlı değil', status_idle: 'Adres gir ve taramayı başlat.',
-      key_summary: 'İsteğe bağlı: Etherscan API anahtarı (ücretsiz) — BNB Chain, opBNB, HyperEVM, Taiko ve Sei için token dizini açar', btn_key_save: 'Kaydet', key_link: 'Ücretsiz anahtar al ↗', key_hint: 'Anahtar yalnız bu tarayıcıda (localStorage) tutulur ve doğrudan Etherscan API’sine gider; başka hiçbir yere gönderilmez.',
+      key_summary: 'Etherscan API anahtarı: ortak ücretsiz anahtar hazır gelir (opBNB, HyperEVM, Taiko, Sei); sınırına takılırsa kendi ücretsiz anahtarını buraya gir', btn_key_save: 'Kaydet', key_link: 'Ücretsiz anahtar al ↗', key_hint: 'Anahtar yalnız bu tarayıcıda (localStorage) tutulur ve doğrudan Etherscan API’sine gider; başka hiçbir yere gönderilmez.', es_shared_limit: 'Ortak Etherscan anahtarı sınırına takıldı; kendi ücretsiz anahtarını girersen bu ağlar tam kapsama girer.',
       kpi_ready: 'Şimdi çekilebilir', kpi_wait: 'Bekleyen', kpi_native: 'Yerli coin bakiyesi', kpi_cov: 'Kapsam',
       h_ready: 'Çekilebilir', h_ready_sub: 'Tek tıkla; önce simüle edilir, sonra her işlemi cüzdanında onaylarsın', h_wait: 'Bekleyen', h_wait_sub: 'Kilit ya da vesting süresi dolunca çekilebilir', h_info: 'Elle işlem', h_info_sub: 'Protokole özgü akış gerektirir; bağlantı doğrudan protokol arayüzüne gider', h_tokens: 'Tokenlar', h_tokens_sub: 'Cüzdanda duran, doğrudan takas edilebilir bakiyeler (≥ $1)', h_native: 'Yerli coinler', h_cov: 'Kapsam matrisi', h_cov_sub: 'Her ağ için kullanılan veri kaynağı ve kapsam düzeyi', h_log: 'Etkinlik',
       th_chain: 'Ağ', th_what: 'Varlık', th_amount: 'Miktar', th_note: 'Açıklama', th_when: 'Açılış', th_balance: 'Bakiye', th_txs: 'İşlem',
@@ -190,22 +213,24 @@
       foot_a: 'Güvenlik.', foot1: 'Sayfa gizli anahtar, seed ya da imza istemez; yalnız imzasız işlem (to / data / value) hazırlar ve cüzdan uzantın gösterir. Her işlem gönderilmeden önce cüzdan adına simüle edilir; geri dönecek işlem gönderilmez. Tüm istekler doğrudan herkese açık RPC, Blockscout, Routescan, BTRScan, Etherscan, CoinGecko ve Wormholescan uçlarına gider.', foot_b: 'Sorumluluk.', foot2: 'Yatırım tavsiyesi değildir. Miktarlar simülasyon ve zincir okumasıdır; işlem anında değişebilir, gaz ücretleri size aittir.', foot3: 'Açık kaynak · MIT ·',
       bad_addr: 'Geçersiz adres: 0x ile başlayan 40 haneli hex bekleniyor.', scanning: 'Taranıyor', chains: 'ağ', done: 'Tarama tamamlandı', findings: 'bulgu', stopped: 'Tarama durduruldu', none_ready: 'Şu an tek tıkla çekilebilir bir varlık bulunmadı.', none_wait: 'Bekleyen kilit ya da vesting yok.', none_info: 'Elle işlem gerektiren varlık yok.', none_tokens: 'Bakiye yok.', none_native: 'Bakiye yok.', pending: 'Tarama bitince dolacak.',
       items: 'kalem', full_cov: 'tam kapsam', key_saved: 'Etherscan anahtarı kaydedildi', key_cleared: 'Etherscan anahtarı silindi',
-      btn_withdraw: 'Çek', btn_unlock: 'Kilidi aç', btn_claim: 'Al', btn_vest: 'Vesting başlat', proto_link: 'protokol arayüzü', after: 'sonrası', total_native: 'toplam', no_wallet: 'EVM cüzdanı (MetaMask, Rabby vb.) bulunamadı.', connected: 'Cüzdan bağlandı', wrong_wallet: 'Bağlı cüzdan taranan adres değil; işlem gönderilmedi.', different: '· taranan adresten farklı', scanned_addr: '· taranan adres',
+      btn_withdraw: 'Çek', btn_unlock: 'Kilidi aç', btn_claim: 'Al', btn_vest: 'Vesting başlat', btn_go: 'GİT', proto_link: 'protokol arayüzü', after: 'sonrası', total_native: 'toplam', no_wallet: 'EVM cüzdanı (MetaMask, Rabby vb.) bulunamadı.', connected: 'Cüzdan bağlandı', wrong_wallet: 'Bağlı cüzdan taranan adres değil; işlem gönderilmedi.', different: '· taranan adresten farklı', scanned_addr: '· taranan adres',
       switched: 'ağına geçildi', step: 'Adım', approve: 'cüzdanında onayla', sent: 'Gönderildi', no_receipt: '4 dakika içinde makbuz gelmedi; explorer bağlantısından kontrol edip yeniden tara.', reverted: 'İşlem zincirde geri döndü; sonraki adım iptal edildi.', confirmed: 'Onaylandı, blok', rescan: 'Tamamlandı. 10 saniye sonra yeniden taranıyor.', rejected: 'İmza reddedildi; hiçbir şey gönderilmedi.', err: 'Hata',
       src_blockscout: 'Blockscout', src_routescan: 'Routescan', src_btrscan: 'BTRScan', src_etherscan: 'Etherscan', src_logs: 'Zincir logları', src_logs_window: 'Zincir logları (son {n} blok)', src_none: 'Yerli bakiye', src_error: 'Cevap yok',
-      cov_full: 'Token ve NFT dizini {src} üzerinden okundu.', cov_partial: 'Yalnız son {n} blok tarandı; daha eskiler için Etherscan anahtarı gerekir.', cov_native_key: 'Token dizini için ücretsiz Etherscan API anahtarı gerekir (yukarıdaki alan).', cov_native_none: 'Bu ağ için herkese açık token dizini bulunmuyor; yalnız yerli bakiye ve bilinen pozisyon yöneticileri okundu.', cov_error: 'Veri kaynağı yanıt vermedi; yeniden tarayın.',
+      cov_full: 'Token ve NFT dizini {src} üzerinden okundu.', cov_partial: 'Yalnız son {n} blok tarandı; daha eskiler için Etherscan anahtarı gerekir.', cov_native_key: 'Token dizini için Etherscan anahtarı gerekir; ortak anahtar sınırına takıldıysa kendi ücretsiz anahtarını yukarıdaki alana gir.', cov_native_paid: 'Bu ağın token dizini Etherscan’in ücretli planını gerektiriyor (ücretsiz anahtarla açılmıyor); yalnız yerli bakiye ve bilinen pozisyon yöneticileri okundu.', cov_native_none: 'Bu ağ için herkese açık token dizini bulunmuyor; yalnız yerli bakiye ve bilinen pozisyon yöneticileri okundu.', cov_error: 'Veri kaynağı yanıt vermedi; yeniden tarayın.',
       note_pos: 'Cüzdan adına decreaseLiquidity + collect simüle edildi.', note_pos_fail: 'Çekim simülasyonu başarısız', note_lp: 'Havuz payı', note_lp_two: 'Çekim iki işlemdir: LP çifte gönderilir, ardından burn çağrılır.', note_lp_router: 'Router üzerinden çekilir: onay + removeLiquidity, alt sınır %98.', note_lp_unpriced: 'Fiyat bilgisi yok.', note_lp_big: 'Değerli pozisyon ve bu çiftin router’ı tanınmıyor: iki ayrı işlem MEV riski taşır; protokol arayüzünden tek işlemde çekin.', note_lp_noabi: 'LP tokenının çift arayüzü yok; protokol arayüzünden çekilir.',
       note_escrow: 'Kilit/escrow tokenı: vesting ya da kilit süresi protokol arayüzünde çözülür.', note_token: 'Standart token; cüzdanda görünür.', note_aave: 'withdraw(asset, max, owner). Açık borç varsa kısmen çekilir.', note_ctoken: 'redeem(balance). Havuz likiditesi yoksa geri döner.', note_bitlayer: 'claimDelayedRedeems(). Süre dolmadan çağrı geri döner; kayıp olmaz.', lbl_bitlayer: 'Bedrock uniBTC gecikmeli geri alım → BTC', lbl_aave: 'Aave-tipi mevduat', lbl_ctoken: 'Compound-tipi mevduat', lbl_pos: 'Konsantre likidite pozisyonu', lbl_lp: 'likiditesi',
       lbl_velock: 'oy kilidi (ve-NFT)', note_velock_ready: 'Kilit süresi doldu; withdraw(tokenId) ile kilitli miktar cüzdana döner.', note_velock_wait: 'Kilit süresi dolmadı; süre bitince “Kilidi aç” açılır.', lbl_xtoken_pending: 'vesting', note_xtoken_ready: 'Vesting bitti; finalizeRedeem ile alınır.', note_xtoken_wait: 'Vesting sürüyor.', note_xtoken_start: 'Vesting başlatır: {days} gün sonra alınır; en kısa süre en düşük dönüşüm oranını verir. Daha yüksek oran için protokol arayüzünde daha uzun süre seçin.', lbl_glp: 'GMX GLP (stake)', note_glp: 'unstakeAndRedeemGlp: GLP çözülür ve wrapped yerli coine çevrilir.',
       note_blocked: 'Çekim şu an mümkün değil, simülasyon geri döndü: {reason}. Protokol rezervi durdurmuş ya da dondurmuş olabilir; açılınca yeniden tarayın.', preflight_fail: 'Gönderilmedi: ön simülasyon geri döndü ({reason}). Gaz harcanmadı.',
-      wh_transfer: 'hedef zincirde alınmamış', wh_msg: 'Wormhole mesajı hedefte tamamlanmamış görünüyor', wh_note: 'Portal Bridge “Redeem” ile hedef cüzdandan alınır.', wh_note2: 'Takas ya da mesaj olabilir; tutar bilinmiyor, bağlantıdan inceleyin.'
+      wh_transfer: 'hedef zincirde alınmamış', wh_msg: 'Wormhole mesajı hedefte tamamlanmamış görünüyor', wh_note: 'Portal Bridge “Redeem” ile hedef cüzdandan alınır.', wh_note2: 'Takas ya da mesaj olabilir; tutar bilinmiyor, bağlantıdan inceleyin.',
+      h_cons: 'Tek ağda topla', h_cons_sub: 'Bakiyeleri seçtiğin ağa ve tokena köprüler (LI.FI); her adım önce simüle edilir', cons_dest: 'Hedef ağ', cons_token: 'Hedef varlık', cons_min: 'Alt sınır (USD)', btn_cons_plan: 'Planı hesapla', btn_cons_all: 'Hepsini gönder', cons_receive: 'Alınacak', cons_cost: 'Gaz + ücret', cons_route: 'Rota', cons_empty: 'Önce taramayı bitir, sonra hedefi seçip planı hesapla.', cons_none: 'Alt sınırın üstünde, hedef dışında bakiye yok.', cons_quoting: 'Teklifler alınıyor', cons_nogas: 'kaynak ağda gaz için yerli coin yok', cons_noroute: 'rota bulunamadı', cons_send: 'Gönder', cons_sent: 'köprüye verildi; varış birkaç dakika sürer', cons_approve: 'onay (approve)', cons_net: 'net', cons_plan_done: 'Plan hazır: {n} kaynak, toplam ≈ {usd} → hedefte ≈ {to}',
+      h_sn: 'Starknet', h_sn_sub: 'JediSwap v2 pozisyonları ve STRK staking; Braavos ya da Ready X ile imza', btn_sn_connect: 'Starknet cüzdanını bağla', sn_idle: 'Adres gir ve taramayı başlat. İlk tarama 3-5 dakika sürer (737 staking havuzu ve pozisyon geçmişi zincirden okunur).', sn_bad_addr: 'Geçersiz Starknet adresi (0x + 60-64 hex).', sn_step_bal: 'bakiyeler', sn_step_pos: 'JediSwap v2 pozisyonları (Transfer geçmişi)', sn_step_pools: 'staking havuz listesi', sn_step_members: 'havuz üyelikleri', sn_done: 'Starknet taraması bitti', sn_pos: 'JediSwap v2 pozisyonu', sn_pos_note: 'Cüzdan adına decrease_liquidity + collect simüle edildi.', sn_pos_note2: 'Simülasyon yapılamadı; likidite zincirden okundu.', sn_stake: 'STRK delegasyonu', sn_stake_note: 'Ödül hemen gelir; anapara için {d} günlük bekleme başlar (claim_rewards + exit_delegation_pool_intent, tek imza).', sn_stake_wait: 'Bekleme sürüyor; {when} sonrası “Çıkışı tamamla”.', sn_stake_action: 'Bekleme doldu; exit_delegation_pool_action ile anapara cüzdana döner.', sn_stake_reward: 'birikmiş ödül', btn_sn_exit: 'Ödül al + çıkışı başlat', btn_sn_action: 'Çıkışı tamamla', sn_no_wallet: 'Starknet cüzdanı (Braavos / Ready X) bulunamadı.', sn_none: 'Bu adreste JediSwap v2 pozisyonu ya da STRK delegasyonu bulunmadı.'
     },
     en: {
       tagline: 'Serverless · keyless · open source',
       hero_title: 'Find what your wallet left behind. Recover it in one click.',
-      hero_text: 'Scans 36 EVM chains for liquidity positions, deposits, locks, vestings and unredeemed bridge transfers. Amounts are on-chain simulations made on behalf of the wallet, not estimates. No keys are ever requested; only your own wallet signs.',
+      hero_text: 'Scans 37 EVM chains and Starknet for liquidity positions, deposits, locks, vestings and unredeemed bridge transfers. Amounts are on-chain simulations made on behalf of the wallet, not estimates. No keys are ever requested; only your own wallet signs.',
       btn_scan: 'Scan', btn_stop: 'Stop', btn_connect: 'Connect wallet', wallet_none: 'no wallet connected', status_idle: 'Enter an address and start the scan.',
-      key_summary: 'Optional: Etherscan API key (free) — unlocks token indexes for BNB Chain, opBNB, HyperEVM, Taiko and Sei', btn_key_save: 'Save', key_link: 'Get a free key ↗', key_hint: 'The key stays in this browser (localStorage) and is sent only to the Etherscan API; nothing else receives it.',
+      key_summary: 'Etherscan API key: a shared free key ships with the app (opBNB, HyperEVM, Taiko, Sei); if it hits its limit, paste your own free key here', btn_key_save: 'Save', key_link: 'Get a free key ↗', key_hint: 'The key stays in this browser (localStorage) and is sent only to the Etherscan API; nothing else receives it.', es_shared_limit: 'The shared Etherscan key hit its limit; add your own free key to bring these chains to full coverage.',
       kpi_ready: 'Withdrawable now', kpi_wait: 'Waiting', kpi_native: 'Native balances', kpi_cov: 'Coverage',
       h_ready: 'Withdrawable', h_ready_sub: 'One click; simulated first, then you approve each transaction in your wallet', h_wait: 'Waiting', h_wait_sub: 'Withdrawable once the lock or vesting period ends', h_info: 'Manual', h_info_sub: 'Needs a protocol-specific flow; the link opens the protocol UI', h_tokens: 'Tokens', h_tokens_sub: 'Freely tradable balances sitting in the wallet (≥ $1)', h_native: 'Native coins', h_cov: 'Coverage matrix', h_cov_sub: 'Data source and coverage level per chain', h_log: 'Activity',
       th_chain: 'Chain', th_what: 'Asset', th_amount: 'Amount', th_note: 'Details', th_when: 'Unlocks', th_balance: 'Balance', th_txs: 'Txs',
@@ -213,15 +238,17 @@
       foot_a: 'Security.', foot1: 'The page never asks for a private key, seed phrase or signature; it only prepares unsigned transactions (to / data / value) that your wallet displays. Every transaction is simulated on behalf of the wallet before it is sent; a reverting transaction is never sent. All requests go directly to public RPC, Blockscout, Routescan, BTRScan, Etherscan, CoinGecko and Wormholescan endpoints.', foot_b: 'Disclaimer.', foot2: 'Not financial advice. Amounts are simulations and chain reads; they can change at execution time and gas is on you.', foot3: 'Open source · MIT ·',
       bad_addr: 'Invalid address: expected 0x followed by 40 hex characters.', scanning: 'Scanning', chains: 'chains', done: 'Scan complete', findings: 'findings', stopped: 'Scan stopped', none_ready: 'Nothing withdrawable in one click right now.', none_wait: 'No pending locks or vestings.', none_info: 'No assets need a manual flow.', none_tokens: 'No balance.', none_native: 'No balance.', pending: 'Populates when the scan completes.',
       items: 'items', full_cov: 'chains fully covered', key_saved: 'Etherscan key saved', key_cleared: 'Etherscan key removed',
-      btn_withdraw: 'Withdraw', btn_unlock: 'Unlock', btn_claim: 'Claim', btn_vest: 'Start vesting', proto_link: 'protocol UI', after: 'onwards', total_native: 'total', no_wallet: 'No EVM wallet (MetaMask, Rabby, …) detected.', connected: 'Wallet connected', wrong_wallet: 'Connected wallet is not the scanned address; nothing was sent.', different: '· differs from the scanned address', scanned_addr: '· scanned address',
+      btn_withdraw: 'Withdraw', btn_unlock: 'Unlock', btn_claim: 'Claim', btn_vest: 'Start vesting', btn_go: 'GO', proto_link: 'protocol UI', after: 'onwards', total_native: 'total', no_wallet: 'No EVM wallet (MetaMask, Rabby, …) detected.', connected: 'Wallet connected', wrong_wallet: 'Connected wallet is not the scanned address; nothing was sent.', different: '· differs from the scanned address', scanned_addr: '· scanned address',
       switched: 'selected', step: 'Step', approve: 'approve in your wallet', sent: 'Sent', no_receipt: 'No receipt within 4 minutes; check the explorer link, then rescan.', reverted: 'Transaction reverted on chain; the next step was cancelled.', confirmed: 'Confirmed, block', rescan: 'Done. Rescanning in 10 seconds.', rejected: 'Signature rejected; nothing was sent.', err: 'Error',
       src_blockscout: 'Blockscout', src_routescan: 'Routescan', src_btrscan: 'BTRScan', src_etherscan: 'Etherscan', src_logs: 'On-chain logs', src_logs_window: 'On-chain logs (last {n} blocks)', src_none: 'Native balance', src_error: 'No response',
-      cov_full: 'Token and NFT index read via {src}.', cov_partial: 'Only the last {n} blocks were scanned; older history needs an Etherscan key.', cov_native_key: 'A free Etherscan API key is required for the token index (see the field above).', cov_native_none: 'No public token index exists for this chain; native balance and known position managers were read.', cov_error: 'The data source did not respond; rescan later.',
+      cov_full: 'Token and NFT index read via {src}.', cov_partial: 'Only the last {n} blocks were scanned; older history needs an Etherscan key.', cov_native_key: 'The token index needs an Etherscan key; if the shared key hit its limit, paste your own free key in the field above.', cov_native_paid: 'This chain’s token index requires Etherscan’s paid plan (a free key does not unlock it); native balance and known position managers were read.', cov_native_none: 'No public token index exists for this chain; native balance and known position managers were read.', cov_error: 'The data source did not respond; rescan later.',
       note_pos: 'decreaseLiquidity + collect simulated on behalf of the wallet.', note_pos_fail: 'Withdrawal simulation failed', note_lp: 'Pool share', note_lp_two: 'Withdrawal takes two transactions: send the LP to the pair, then call burn.', note_lp_router: 'Withdrawn through the router: approve + removeLiquidity, 98% minimums.', note_lp_unpriced: 'No price available.', note_lp_big: 'Valuable position and this pair’s router is not recognised: two separate transactions carry MEV risk; withdraw in one transaction through the protocol UI.', note_lp_noabi: 'LP token without a pair interface; withdraw through the protocol UI.',
       note_escrow: 'Lock/escrow token: vesting or lock period is resolved in the protocol UI.', note_token: 'Standard token; visible in the wallet.', note_aave: 'withdraw(asset, max, owner). Partial if there is open debt.', note_ctoken: 'redeem(balance). Reverts if the pool lacks liquidity.', note_bitlayer: 'claimDelayedRedeems(). Reverts before the timer ends; nothing is lost.', lbl_bitlayer: 'Bedrock uniBTC delayed redeem → BTC', lbl_aave: 'Aave-style deposit', lbl_ctoken: 'Compound-style deposit', lbl_pos: 'Concentrated liquidity position', lbl_lp: 'liquidity',
       lbl_velock: 'vote lock (ve-NFT)', note_velock_ready: 'Lock expired; withdraw(tokenId) returns the locked amount to the wallet.', note_velock_wait: 'Lock still running; “Unlock” appears when it ends.', lbl_xtoken_pending: 'vesting', note_xtoken_ready: 'Vesting finished; claimed with finalizeRedeem.', note_xtoken_wait: 'Vesting in progress.', note_xtoken_start: 'Starts a vesting: claimable after {days} days; the shortest duration yields the lowest conversion ratio. Pick a longer duration in the protocol UI for a better ratio.', lbl_glp: 'GMX GLP (staked)', note_glp: 'unstakeAndRedeemGlp: unstakes GLP and redeems it into the wrapped native coin.',
       note_blocked: 'Withdrawal is not possible right now, the simulation reverted: {reason}. The protocol may have paused or frozen the reserve; rescan once it reopens.', preflight_fail: 'Not sent: the preflight simulation reverted ({reason}). No gas was spent.',
-      wh_transfer: 'not redeemed on the target chain', wh_msg: 'Wormhole message looks incomplete on the target', wh_note: 'Redeem from the target wallet via Portal Bridge “Redeem”.', wh_note2: 'May be a swap or a message; amount unknown, inspect the link.'
+      wh_transfer: 'not redeemed on the target chain', wh_msg: 'Wormhole message looks incomplete on the target', wh_note: 'Redeem from the target wallet via Portal Bridge “Redeem”.', wh_note2: 'May be a swap or a message; amount unknown, inspect the link.',
+      h_cons: 'Consolidate', h_cons_sub: 'Bridges balances to the chain and asset you choose (LI.FI); every step is simulated first', cons_dest: 'Target chain', cons_token: 'Target asset', cons_min: 'Minimum (USD)', btn_cons_plan: 'Build plan', btn_cons_all: 'Send all', cons_receive: 'Receive', cons_cost: 'Gas + fees', cons_route: 'Route', cons_empty: 'Finish the scan first, then pick a target and build the plan.', cons_none: 'No balance above the minimum outside the target chain.', cons_quoting: 'Fetching quotes', cons_nogas: 'no native coin for gas on the source chain', cons_noroute: 'no route found', cons_send: 'Send', cons_sent: 'handed to the bridge; arrival takes a few minutes', cons_approve: 'approval', cons_net: 'net', cons_plan_done: 'Plan ready: {n} sources, total ≈ {usd} → ≈ {to} on the target',
+      h_sn: 'Starknet', h_sn_sub: 'JediSwap v2 positions and STRK staking; signed with Braavos or Ready X', btn_sn_connect: 'Connect Starknet wallet', sn_idle: 'Enter an address and start the scan. The first scan takes 3-5 minutes (737 staking pools and position history are read on chain).', sn_bad_addr: 'Invalid Starknet address (0x + 60-64 hex).', sn_step_bal: 'balances', sn_step_pos: 'JediSwap v2 positions (transfer history)', sn_step_pools: 'staking pool list', sn_step_members: 'pool memberships', sn_done: 'Starknet scan complete', sn_pos: 'JediSwap v2 position', sn_pos_note: 'decrease_liquidity + collect simulated on behalf of the wallet.', sn_pos_note2: 'Simulation unavailable; liquidity read on chain.', sn_stake: 'STRK delegation', sn_stake_note: 'Rewards arrive immediately; principal starts a {d}-day exit window (claim_rewards + exit_delegation_pool_intent, one signature).', sn_stake_wait: 'Exit window running; “Complete exit” after {when}.', sn_stake_action: 'Exit window over; exit_delegation_pool_action returns the principal.', sn_stake_reward: 'unclaimed rewards', btn_sn_exit: 'Claim + start exit', btn_sn_action: 'Complete exit', sn_no_wallet: 'No Starknet wallet (Braavos / Ready X) detected.', sn_none: 'No JediSwap v2 position or STRK delegation found for this address.'
     }
   };
   var LANG = 'tr';
@@ -240,15 +267,15 @@
     ['polygon', 137, 'Polygon', 'POL', ['https://polygon-bor-rpc.publicnode.com', 'https://polygon-rpc.com'], 'https://polygonscan.com', 'polygon-ecosystem-token', ['bs:https://polygon.blockscout.com', 'es'], 'polygon-pos'],
     ['zksync', 324, 'zkSync Era', 'ETH', ['https://mainnet.era.zksync.io'], 'https://explorer.zksync.io', 'ethereum', ['bs:https://zksync.blockscout.com'], 'zksync'],
     ['linea', 59144, 'Linea', 'ETH', ['https://linea-rpc.publicnode.com', 'https://rpc.linea.build'], 'https://lineascan.build', 'ethereum', ['bs:https://api-explorer.linea.build', 'es'], 'linea'],
-    ['scroll', 534352, 'Scroll', 'ETH', ['https://scroll-rpc.publicnode.com', 'https://rpc.scroll.io'], 'https://scrollscan.com', 'ethereum', ['bs:https://blockscout.scroll.io', 'es'], 'scroll'],
+    ['scroll', 534352, 'Scroll', 'ETH', ['https://scroll-rpc.publicnode.com', 'https://rpc.scroll.io'], 'https://scrollscan.com', 'ethereum', ['bs:https://blockscout.scroll.io', 'es', 'logs:50000:40'], 'scroll'],
     ['mode', 34443, 'Mode', 'ETH', ['https://mainnet.mode.network'], 'https://explorer.mode.network', 'ethereum', ['bs:https://explorer.mode.network'], 'mode'],
     ['manta', 169, 'Manta Pacific', 'ETH', ['https://pacific-rpc.manta.network/http'], 'https://pacific-explorer.manta.network', 'ethereum', ['bs:https://pacific-explorer.manta.network'], 'manta-pacific'],
     ['soneium', 1868, 'Soneium', 'ETH', ['https://rpc.soneium.org'], 'https://soneium.blockscout.com', 'ethereum', ['bs:https://soneium.blockscout.com'], 'soneium'],
     ['lisk', 1135, 'Lisk', 'ETH', ['https://rpc.api.lisk.com'], 'https://blockscout.lisk.com', 'ethereum', ['bs:https://blockscout.lisk.com'], 'lisk'],
     ['celo', 42220, 'Celo', 'CELO', ['https://celo-rpc.publicnode.com', 'https://forno.celo.org'], 'https://celoscan.io', 'celo', ['bs:https://celo.blockscout.com', 'es'], 'celo'],
     ['ink', 57073, 'Ink', 'ETH', ['https://rpc-gel.inkonchain.com'], 'https://explorer.inkonchain.com', 'ethereum', ['bs:https://explorer.inkonchain.com'], 'ink'],
-    ['metis', 1088, 'Metis', 'METIS', ['https://andromeda.metis.io/?owner=1088'], 'https://andromeda-explorer.metis.io', 'metis-token', ['bs:https://andromeda-explorer.metis.io'], 'metis-andromeda'],
-    ['gnosis', 100, 'Gnosis', 'xDAI', ['https://gnosis-rpc.publicnode.com', 'https://rpc.gnosischain.com'], 'https://gnosisscan.io', 'xdai', ['bs:https://gnosis.blockscout.com', 'es'], 'xdai'],
+    ['metis', 1088, 'Metis', 'METIS', ['https://andromeda.metis.io/?owner=1088'], 'https://andromeda-explorer.metis.io', 'metis-token', ['logs'], 'metis-andromeda'],
+    ['gnosis', 100, 'Gnosis', 'xDAI', ['https://rpc.gnosischain.com', 'https://gnosis-rpc.publicnode.com'], 'https://gnosisscan.io', 'xdai', ['bs:https://gnosis.blockscout.com', 'logs', 'es'], 'xdai'],
     ['immutable', 13371, 'Immutable zkEVM', 'IMX', ['https://rpc.immutable.com'], 'https://explorer.immutable.com', 'immutable-x', ['bs:https://explorer.immutable.com'], 'immutable'],
     ['unichain', 130, 'Unichain', 'ETH', ['https://unichain-rpc.publicnode.com'], 'https://uniscan.xyz', 'ethereum', ['bs:https://unichain.blockscout.com', 'es'], 'unichain'],
     ['bsc', 56, 'BNB Chain', 'BNB', ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.binance.org'], 'https://bscscan.com', 'binancecoin', ['es'], 'binance-smart-chain'],
@@ -337,13 +364,16 @@
   // ============================================================ network layer
   function limiter(n) { var active = 0, q = []; function next() { if (active >= n || !q.length) return; active++; var job = q.shift(); job.fn().then(job.res, job.rej).finally(function () { active--; next(); }); } return function (fn) { return new Promise(function (res, rej) { q.push({ fn: fn, res: res, rej: rej }); next(); }); }; }
   var rpcLimit = limiter(12), HOST_LIMIT = {};
-  function hostLimit(url) { var h; try { h = new URL(url).host; } catch (e) { h = url; } if (!HOST_LIMIT[h]) HOST_LIMIT[h] = limiter(2); return HOST_LIMIT[h]; }
+  function hostLimit(url) { var h; try { h = new URL(url).host; } catch (e) { h = url; } if (!HOST_LIMIT[h]) HOST_LIMIT[h] = limiter(h === 'api.etherscan.io' ? 1 : 2); return HOST_LIMIT[h]; }
   function withTimeout(ms) { var c = new AbortController(); setTimeout(function () { c.abort(); }, ms); return c.signal; }
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   async function rpc(chain, method, params) { var last = 'no rpc'; for (var i = 0; i < chain.rpc.length; i++) { try { var r = await fetch(chain.rpc[i], { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params }), signal: withTimeout(15000) }); var j = await r.json(); if (j.error) { var e = new Error(String(j.error.message || JSON.stringify(j.error)).slice(0, 160)); e.rpcError = true; e.data = j.error.data; throw e; } return j.result; } catch (e) { last = e; if (e.rpcError) throw e; } } throw (last instanceof Error ? last : new Error(String(last))); }
   function call(chain, to, data, from) { var o = { to: to, data: data }; if (from) o.from = from; return rpcLimit(function () { return rpc(chain, 'eth_call', [o, 'latest']); }); }
-  async function getJson(url, timeoutMs) { var lim = hostLimit(url); for (var attempt = 0; attempt < 3; attempt++) { try { var r = await lim(function () { return fetch(url, { headers: { accept: 'application/json' }, signal: withTimeout(timeoutMs || 30000) }); }); if (r.status === 200) return await r.json(); if (r.status === 404) return null; if (r.status !== 429 && r.status < 500) return null; } catch (e) { /* retry */ } if (attempt < 2) await sleep(1500 * Math.pow(2, attempt)); } throw new Error('unreachable'); }
-  // Prices: DefiLlama (coins.llama.fi) is the primary source — batched by 100 keys, CORS-enabled, no per-IP quota.
+  // Index/API GET with a short budget: two attempts, 15 s each. A 429 is treated as "source busy" so the chain falls
+  // through to its next source instead of stalling the whole scan.
+  async function getJson(url, timeoutMs) { var lim = hostLimit(url), spaced = url.indexOf('https://api.etherscan.io/') === 0; for (var attempt = 0; attempt < 2; attempt++) { try { var r = await lim(async function () { var resp = await fetch(url, { headers: { accept: 'application/json' }, signal: withTimeout(timeoutMs || 15000) }); if (spaced) await sleep(400); return resp; }); if (r.status === 200) return await r.json(); if (r.status === 404) return null; if (r.status === 429) throw new Error('rate limited'); if (r.status < 500) return null; } catch (e) { if (/rate limited/.test(String(e.message))) throw e; } if (attempt < 1) await sleep(1200); } throw new Error('unreachable'); }
+  function withDeadline(promise, ms, label) { return Promise.race([promise, sleep(ms).then(function () { throw new Error((label || 'step') + ' timeout'); })]); }
+  // Prices: DefiLlama (coins.llama.fi) is the primary source: batched by 100 keys, CORS-enabled, no per-IP quota.
   // CoinGecko's public API (429 after ~30 requests/minute) is only a fallback for native coins.
   var llamaSerial = limiter(1), priceQueue = [], priceTimer = null;
   async function llama(keys) {
@@ -377,7 +407,8 @@
     return { erc20: erc20, nfts: nft };
   }
   async function srcEtherscanLike(baseUrl, chain, address, keyParam) {
-    var tx = await getJson(baseUrl + '?module=account&action=tokentx&address=' + address + '&page=1&offset=1000&sort=desc' + keyParam);
+    var tx = null;
+    for (var tries = 0; tries < 3; tries++) { tx = await getJson(baseUrl + '?module=account&action=tokentx&address=' + address + '&page=1&offset=1000&sort=desc' + keyParam); if (tx && /max calls per sec/i.test(String(tx.result || ''))) { await sleep(1100); continue; } break; }
     if (!tx || (String(tx.status) !== '1' && !(Array.isArray(tx.result) && tx.result.length === 0))) { var msg = tx && typeof tx.result === 'string' ? tx.result : (tx && tx.message) || 'no data'; if (/no transactions found/i.test(msg)) return { erc20: [], nfts: [] }; throw new Error(msg.slice(0, 80)); }
     var seen = {}, erc20 = []; (tx.result || []).forEach(function (r) { var a = String(r.contractAddress || '').toLowerCase(); if (a && !seen[a]) { seen[a] = 1; erc20.push({ address: a, symbol: r.tokenSymbol, name: r.tokenName, decimals: r.tokenDecimal != null ? Number(r.tokenDecimal) : undefined }); } });
     var nfts = [], seenN = {}; try { var nt = await getJson(baseUrl + '?module=account&action=tokennfttx&address=' + address + '&page=1&offset=1000&sort=desc' + keyParam); ((nt && nt.result) || []).forEach(function (r) { var a = String(r.contractAddress || '').toLowerCase(), k = a + ':' + r.tokenID; if (a && r.tokenID != null && !seenN[k]) { seenN[k] = 1; nfts.push({ address: a, id: r.tokenID, symbol: r.tokenSymbol, name: r.tokenName }); } }); } catch (e) { /* NFT list optional */ }
@@ -385,7 +416,7 @@
   }
   function srcRoutescan(chain, address) { return srcEtherscanLike('https://api.routescan.io/v2/network/mainnet/evm/' + chain.id + '/etherscan/api', chain, address, ''); }
   function srcBtrscan(chain, address) { return srcEtherscanLike('https://api.btrscan.com/scan/api', chain, address, ''); }
-  function srcEtherscan(chain, address, key) { return srcEtherscanLike('https://api.etherscan.io/v2/api?chainid=' + chain.id, chain, address, '&apikey=' + encodeURIComponent(key)); }
+  function srcEtherscan(chain, address, key) { return srcEtherscanLike('https://api.etherscan.io/v2/api', chain, address, '&chainid=' + chain.id + '&apikey=' + encodeURIComponent(key)); }
   async function srcLogs(chain, address, windowSize, maxWindows, coverageOut) {
     var padded = '0x' + wa(address), latest = Number(BigInt(await rpc(chain, 'eth_blockNumber', []))), logs = [], scanned = null;
     async function query(from, to) { return rpc(chain, 'eth_getLogs', [{ fromBlock: '0x' + from.toString(16), toBlock: '0x' + to.toString(16), topics: [TRANSFER_TOPIC, null, padded] }]); }
@@ -407,8 +438,12 @@
   }
 
   // ============================================================ scan
-  var STATE = null, STOP = false, ETH_KEY = '';
-  try { ETH_KEY = localStorage.getItem('wrc_eskey') || ''; } catch (e) { /* none */ }
+  // A shared free Etherscan key ships with the app (5 calls/s, 100k/day across all users). When it hits its limit,
+  // the coverage matrix asks for a personal key, which then takes precedence.
+  var DEFAULT_ETH_KEY = 'K9FSP6JMNSYJ6D4ZPAXJUEXFUFMXX7ZJQP', USER_ETH_KEY = '', ETH_KEY = DEFAULT_ETH_KEY, ES_LIMITED = false;
+  var STATE = null, STOP = false;
+  try { USER_ETH_KEY = localStorage.getItem('wrc_eskey') || ''; } catch (e) { /* none */ }
+  if (USER_ETH_KEY) ETH_KEY = USER_ETH_KEY;
   function usdBySymbol(sym, amount, prices) { var s = (sym || '').toUpperCase(); if (STABLE[s]) return amount; var cg = SYM_TO_CG[s]; return cg && prices[cg] != null ? amount * prices[cg] : null; }
   async function runScan(address, onProgress) {
     var st = { address: address, status: 'running', updated: Date.now(), progress: [], natives: [], items: [], coverage: {}, prices: {} };
@@ -450,7 +485,7 @@
       if (bs || STABLE[(sym || '').toUpperCase()]) return null; // an index exists but has no price, or a stablecoin name without an address price
       return usdBySymbol(sym, amount, st.prices); // blue-chip symbols only, on chains without a token index
     }
-    async function native(c) { try { var b = await rpc(c, 'eth_getBalance', [address, 'latest']), nc = await rpc(c, 'eth_getTransactionCount', [address, 'latest']), amt = Number(BigInt(b)) / 1e18; st.natives.push({ chain: c.key, name: c.name, sym: c.sym, amount: amt, nonce: Number(BigInt(nc)), usd: st.prices[c.cg] != null ? amt * st.prices[c.cg] : null }); } catch (e) { st.coverage[c.key] = { level: 'error', source: 'rpc' }; } }
+    async function native(c) { try { var b = await rpc(c, 'eth_getBalance', [address, 'latest']), nc = await rpc(c, 'eth_getTransactionCount', [address, 'latest']), amt = Number(BigInt(b)) / 1e18; st.natives.push({ chain: c.key, name: c.name, sym: c.sym, amount: amt, raw: BigInt(b).toString(), nonce: Number(BigInt(nc)), usd: st.prices[c.cg] != null ? amt * st.prices[c.cg] : null }); } catch (e) { st.coverage[c.key] = { level: 'error', source: 'rpc' }; } }
     async function position(c, npm, tid, label) {
       var raw; try { raw = await call(c, npm, SEL.positions + w(tid)); } catch (e) { return; }
       var p = decodePositions(raw); if (!p || (p.liquidity === 0n && p.owed0 === 0n && p.owed1 === 0n)) return;
@@ -530,12 +565,17 @@
         if (kind2 === 'lp') { await lp(c, tk.address, bal, meta2.sym || 'LP', meta2.name || ''); continue; }
         if (kind2 === 'escrow') { if (await xToken(c, tk.address, bal, meta2)) continue; item({ chain: c.key, chain_name: c.name, kind: 'escrow', status: 'info', label: meta2.sym + ' · ' + meta2.name, amount: fmtAmt(bal, meta2.dec) + ' ' + meta2.sym, usd: usd, note: t('note_escrow'), explorer: protoLink(meta2.sym, meta2.name) || (c.explorer + '/address/' + tk.address) }); continue; }
         var handled = await receipt(c, tk.address, bal, meta2.sym || '?');
-        if (!handled) { if (usd == null) usd = await tokenUsd(c, tk.address, meta2.sym, Number(bal) / Math.pow(10, meta2.dec), null, false); if (usd != null && usd >= 1) item({ chain: c.key, chain_name: c.name, kind: 'token', status: 'token', label: meta2.sym + ' · ' + meta2.name, amount: fmtAmt(bal, meta2.dec) + ' ' + meta2.sym, usd: usd, note: t('note_token'), explorer: c.explorer + '/token/' + tk.address + '?a=' + address }); }
+        if (!handled) { if (usd == null) usd = await tokenUsd(c, tk.address, meta2.sym, Number(bal) / Math.pow(10, meta2.dec), null, false); if (usd != null && usd >= 1) item({ chain: c.key, chain_name: c.name, kind: 'token', status: 'token', label: meta2.sym + ' · ' + meta2.name, amount: fmtAmt(bal, meta2.dec) + ' ' + meta2.sym, usd: usd, note: t('note_token'), explorer: c.explorer + '/token/' + tk.address + '?a=' + address, token: tk.address, raw: bal.toString(), dec: meta2.dec }); }
       }
     }
     async function chainScan(c) {
       var cov = { level: 'native', source: 'none', blocks: null, partial: false };
-      try {
+      try { await withDeadline(chainScanBody(c, cov), 170000, c.name); }
+      catch (e) { if (cov.level === 'native' || cov.level === 'pending') cov.level = 'error'; cov.lastError = String(e.message || e).slice(0, 60); }
+      finally { if (st.coverage[c.key].level !== 'error') st.coverage[c.key] = cov; st.progress.push(c.key); onProgress(st); }
+    }
+    async function chainScanBody(c, cov) {
+      {
         var idx = null, used = null;
         for (var s = 0; s < c.sources.length && !idx && !STOP; s++) {
           var src = c.sources[s];
@@ -543,19 +583,18 @@
             if (src.indexOf('bs:') === 0) { idx = await srcBlockscout(src.slice(3), c, address); used = 'blockscout'; }
             else if (src === 'rs') { idx = await srcRoutescan(c, address); used = 'routescan'; }
             else if (src === 'btr') { idx = await srcBtrscan(c, address); used = 'btrscan'; }
-            else if (src === 'es') { if (!ETH_KEY) continue; idx = await srcEtherscan(c, address, ETH_KEY); used = 'etherscan'; }
+            else if (src === 'es') { if (!ETH_KEY || (ES_LIMITED && !USER_ETH_KEY)) continue; try { idx = await srcEtherscan(c, address, ETH_KEY); used = 'etherscan'; } catch (e2) { if (/daily rate limit|invalid api key|max rate limit/i.test(String(e2.message || ''))) { if (!USER_ETH_KEY && !ES_LIMITED) log(t('es_shared_limit'), 'warn'); ES_LIMITED = true; cov.esLimited = true; } if (/not supported for this chain|upgrade/i.test(String(e2.message || ''))) cov.esPaid = true; throw e2; } }
             else if (src.indexOf('logs') === 0) { var parts = src.split(':'), co = {}; idx = await srcLogs(c, address, parts[1] ? Number(parts[1]) : 0, parts[2] ? Number(parts[2]) : 0, co); used = 'logs'; cov.partial = co.partial; cov.blocks = co.blocks; }
           } catch (e) { idx = null; cov.lastError = String(e.message || e).slice(0, 60); }
         }
         if (idx) { cov.source = used; cov.level = cov.partial ? 'partial' : 'full'; await processIndex(c, idx); }
         else if (cov.lastError && !c.sources.every(function (x) { return x === 'es'; })) cov.level = 'error';
-        cov.needsKey = c.sources.indexOf('es') >= 0 && !ETH_KEY && cov.level !== 'full' && cov.level !== 'partial';
+        cov.needsKey = c.sources.indexOf('es') >= 0 && (!ETH_KEY || cov.esLimited) && cov.level !== 'full' && cov.level !== 'partial';
         var list = KNOWN_NPMS[c.key] || []; for (var i = 0; i < list.length; i++) { try { var cnt = Number(BigInt(await call(c, list[i], SEL.balanceOf + wa(address)))); for (var k = 0; k < Math.min(cnt, 12) && !STOP; k++) { var tid = BigInt(await call(c, list[i], SEL.tokenOfOwnerByIndex + wa(address) + w(k))); await position(c, list[i], tid, t('lbl_pos')); } } catch (e) { /* manager absent */ } }
-      } catch (e) { cov.level = 'error'; cov.lastError = String(e.message || e).slice(0, 60); }
-      finally { if (st.coverage[c.key].level !== 'error') st.coverage[c.key] = cov; st.progress.push(c.key); onProgress(st); }
+      }
     }
     async function bitlayer() { var c = CHAIN.bitlayer, raw, delay; try { raw = await call(c, BITLAYER_REDEEM_ROUTER, SEL.getUserDelayedRedeems + wa(address)); delay = Number(BigInt(await call(c, BITLAYER_REDEEM_ROUTER, SEL.redeemDelay))); } catch (e) { return; } parseDelayedRedeems(raw).forEach(function (r) { var ready = r.createdAt + delay, amt = Number(r.amount) / 1e8; item({ chain: 'bitlayer', chain_name: c.name, kind: 'bitlayer_redeem', status: now() >= ready ? 'ready' : 'waiting', available_at: ready, label: t('lbl_bitlayer'), amount: amt.toFixed(8) + ' BTC', usd: usdBySymbol('BTC', amt, st.prices), note: t('note_bitlayer'), explorer: c.explorer + '/address/' + BITLAYER_REDEEM_ROUTER, action: { kind: 'bitlayer_claim' } }); }); }
-    async function wormhole() { var ops; try { var r = await fetch('https://api.wormholescan.io/api/v1/operations?address=' + address + '&page=0&pageSize=50', { signal: withTimeout(20000) }); ops = (await r.json()).operations || []; } catch (e) { return; } ops.forEach(function (o) { var tgt = o.targetChain || {}, src = o.sourceChain || {}; if (tgt.status === 'completed') return; var sp = (o.content && o.content.standarizedProperties) || {}, d = o.data || {}, apps = (sp.appIds || []).join(', ') || 'token bridge', amt = d.tokenAmount, sym = d.symbol || '', when = (src.timestamp || '').slice(0, 10), toChain = sp.toChain || '?'; var label = amt && sym ? 'Wormhole · ' + amt + ' ' + sym + ' → chain ' + toChain + ' ' + t('wh_transfer') : t('wh_msg') + ' (' + apps + ')'; var note = amt && sym ? when + ' · ' + String(sp.toAddress || '').slice(0, 20) + '… · ' + t('wh_note') : when + ' · ' + src.chainId + ' → ' + toChain + ' · ' + t('wh_note2'); item({ chain: 'wormhole', chain_name: 'Wormhole', kind: 'bridge', status: 'info', label: label, amount: ((amt || '—') + ' ' + sym).trim(), usd: d.usdAmount ? Number(d.usdAmount) : null, note: note, explorer: 'https://wormholescan.io/#/tx/' + ((src.transaction || {}).txHash || '') }); }); }
+    async function wormhole() { var ops; try { var r = await fetch('https://api.wormholescan.io/api/v1/operations?address=' + address + '&page=0&pageSize=50', { signal: withTimeout(20000) }); ops = (await r.json()).operations || []; } catch (e) { return; } ops.forEach(function (o) { var tgt = o.targetChain || {}, src = o.sourceChain || {}; if (tgt.status === 'completed') return; var sp = (o.content && o.content.standarizedProperties) || {}, d = o.data || {}, apps = (sp.appIds || []).join(', ') || 'token bridge', amt = d.tokenAmount, sym = d.symbol || '', when = (src.timestamp || '').slice(0, 10), toChain = sp.toChain || '?'; var label = amt && sym ? 'Wormhole · ' + amt + ' ' + sym + ' → chain ' + toChain + ' ' + t('wh_transfer') : t('wh_msg') + ' (' + apps + ')'; var note = amt && sym ? when + ' · ' + String(sp.toAddress || '').slice(0, 20) + '… · ' + t('wh_note') : when + ' · ' + src.chainId + ' → ' + toChain + ' · ' + t('wh_note2'); item({ chain: 'wormhole', chain_name: 'Wormhole', kind: 'bridge', status: 'info', label: label, amount: ((amt || '?') + ' ' + sym).trim(), usd: d.usdAmount ? Number(d.usdAmount) : null, note: note, explorer: 'https://wormholescan.io/#/tx/' + ((src.transaction || {}).txHash || '') }); }); }
     var ids = new Set(); CHAINS.forEach(function (c) { if (c.cg) ids.add(c.cg); }); Object.keys(SYM_TO_CG).forEach(function (k) { ids.add(SYM_TO_CG[k]); });
     st.prices = await nativePrices(ids); onProgress(st);
     await Promise.all(CHAINS.map(native)); onProgress(st);
@@ -572,12 +611,12 @@
   function fmtTs(s) { return new Date(Number(s) * 1000).toLocaleString(LANG === 'tr' ? 'tr-TR' : 'en-US'); }
   function hue(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h % 360; }
   function chainCell(key, name) { return '<span class="chain"><i style="background:hsl(' + hue(key) + ' 60% 60%)"></i>' + esc(name) + '</span>'; }
-  function identicon(addr) { if (!/^0x[0-9a-f]{40}$/i.test(addr || '')) return ''; var h = addr.slice(2), cells = '', hb = hue(addr); for (var y = 0; y < 5; y++) for (var x = 0; x < 3; x++) { var on = parseInt(h[(y * 3 + x) % 40], 16) % 2 === 0; if (on) { cells += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>'; if (x < 2) cells += '<rect x="' + (4 - x) + '" y="' + y + '" width="1" height="1"/>'; } } return '<svg viewBox="0 0 5 5" width="26" height="26" shape-rendering="crispEdges" style="background:hsl(' + hb + ' 30% 18%)"><g fill="hsl(' + hb + ' 70% 65%)">' + cells + '</g></svg>'; }
+  function identicon(addr) { if (!/^0x[0-9a-f]{40,64}$/i.test(addr || '')) return ''; var h = addr.slice(2), cells = '', hb = hue(addr); for (var y = 0; y < 5; y++) for (var x = 0; x < 3; x++) { var on = parseInt(h[(y * 3 + x) % 40], 16) % 2 === 0; if (on) { cells += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>'; if (x < 2) cells += '<rect x="' + (4 - x) + '" y="' + y + '" width="1" height="1"/>'; } } return '<svg viewBox="0 0 5 5" width="26" height="26" shape-rendering="crispEdges" style="background:hsl(' + hb + ' 30% 18%)"><g fill="hsl(' + hb + ' 70% 65%)">' + cells + '</g></svg>'; }
   function log(msg, cls) { var el = document.createElement('div'); el.className = cls || ''; el.textContent = new Date().toLocaleTimeString(LANG === 'tr' ? 'tr-TR' : 'en-US') + '  ' + msg; $('log').appendChild(el); $('log').scrollTop = 1e9; }
   function addrInput() { return $('addr').value.trim().toLowerCase(); }
   function applyLang() { document.documentElement.lang = LANG; Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (el) { el.innerHTML = t(el.getAttribute('data-i18n')); }); $('langTr').className = LANG === 'tr' ? 'on' : ''; $('langEn').className = LANG === 'en' ? 'on' : ''; if (STATE) render(STATE); else renderMatrix(null); }
   function srcLabel(cov) { if (!cov || cov.level === 'pending') return ''; if (cov.level === 'error') return t('src_error'); if (cov.source === 'logs') return cov.partial ? t('src_logs_window', { n: fnum(cov.blocks || 0, 0) }) : t('src_logs'); if (cov.source === 'none') return t('src_none'); return t('src_' + cov.source); }
-  function covNote(c, cov) { if (!cov || cov.level === 'pending') return ''; if (cov.level === 'error') return t('cov_error'); if (cov.level === 'full') return t('cov_full', { src: srcLabel(cov) }); if (cov.level === 'partial') return t('cov_partial', { n: fnum(cov.blocks || 0, 0) }); return cov.needsKey ? t('cov_native_key') : t('cov_native_none'); }
+  function covNote(c, cov) { if (!cov || cov.level === 'pending') return ''; if (cov.level === 'error') return cov.esPaid ? t('cov_native_paid') : t('cov_error'); if (cov.level === 'full') return t('cov_full', { src: srcLabel(cov) }); if (cov.level === 'partial') return t('cov_partial', { n: fnum(cov.blocks || 0, 0) }); if (cov.esPaid) return t('cov_native_paid'); return cov.needsKey ? t('cov_native_key') : t('cov_native_none'); }
   function renderMatrix(st) { $('matrix').innerHTML = CHAINS.map(function (c) { var cov = st ? st.coverage[c.key] : null, lvl = cov ? cov.level : 'pending'; return '<div class="cell lvl-' + lvl + '" title="' + esc(covNote(c, cov)) + '"><i></i><b>' + esc(c.name) + '</b><span class="src">' + esc(srcLabel(cov)) + '</span></div>'; }).join(''); }
   function skeleton(cols) { var r = ''; for (var i = 0; i < 3; i++) { r += '<tr class="skel">'; for (var j = 0; j < cols; j++) r += '<td><span style="width:' + (40 + ((i * 7 + j * 13) % 50)) + '%"></span></td>'; r += '</tr>'; } return r; }
   function render(st) {
@@ -593,8 +632,8 @@
     $('kpiNative').textContent = usd(ntot) || '$0'; $('kpiNativeS').textContent = nat.filter(function (x) { return x.amount > 0; }).length + ' ' + t('chains');
     var full = Object.keys(st.coverage).filter(function (k) { return st.coverage[k].level === 'full'; }).length, partial = Object.keys(st.coverage).filter(function (k) { return st.coverage[k].level === 'partial'; }).length;
     $('kpiCov').textContent = full + (partial ? '+' + partial : '') + ' / ' + total; $('kpiCovS').textContent = t('full_cov');
-    function rowCommon(i) { return '<td>' + chainCell(i.chain, i.chain_name || i.chain) + '</td><td>' + esc(i.label) + (i.explorer ? ' <a class="ext" target="_blank" rel="noopener" href="' + esc(i.explorer) + '" title="' + esc(i.explorer.indexOf('/token') > 0 || i.explorer.indexOf('/address') > 0 ? 'explorer' : t('proto_link')) + '">↗</a>' : '') + '</td><td class="num">' + esc(i.amount) + '</td><td class="num">' + usd(i.usd) + '</td>'; }
-    function fill(bodyId, emptyId, rows, cols, emptyKey) { var body = $(bodyId), empty = $(emptyId); if (rows.length) { body.innerHTML = rows.join(''); empty.style.display = 'none'; } else if (running) { body.innerHTML = skeleton(cols); empty.style.display = 'none'; } else { body.innerHTML = ''; empty.textContent = t(emptyKey); empty.style.display = ''; } }
+    function rowCommon(i) { return '<td>' + chainCell(i.chain, i.chain_name || i.chain) + '</td><td>' + esc(i.label) + (i.explorer ? ' <a class="go" target="_blank" rel="noopener" href="' + esc(i.explorer) + '" title="' + esc(i.explorer.indexOf('/token') > 0 || i.explorer.indexOf('/address') > 0 ? 'explorer' : t('proto_link')) + '">' + t('btn_go') + ' <span>↗</span></a>' : '') + '</td><td class="num">' + esc(i.amount) + '</td><td class="num">' + usd(i.usd) + '</td>'; }
+    function fill(bodyId, emptyId, rows, cols, emptyKey) { var body = $(bodyId), empty = $(emptyId); if (rows.length) { body.innerHTML = rows.join(''); empty.style.display = 'none'; } else if (running && done < 6) { body.innerHTML = skeleton(cols); empty.style.display = 'none'; } else if (running) { body.innerHTML = ''; empty.textContent = t('scanning') + ' · ' + done + '/' + total + ' ' + t('chains'); empty.style.display = ''; } else { body.innerHTML = ''; empty.textContent = t(emptyKey); empty.style.display = ''; } }
     $('cntReady').textContent = ready.length; $('cntWait').textContent = wait.length; $('cntInfo').textContent = info.length; $('cntTokens').textContent = tokens.length; $('cntNative').textContent = nat.filter(function (x) { return x.amount > 0 || x.nonce > 0; }).length;
     fill('readyBody', 'readyEmpty', ready.map(function (i) { return '<tr>' + rowCommon(i) + '<td class="note">' + esc(i.note) + '</td><td class="num">' + (i.action ? '<button class="btn primary sm" data-act="' + esc(i.id) + '">' + actionLabel(i.action.kind) + '</button>' : '') + '</td></tr>'; }), 6, 'none_ready');
     fill('waitBody', 'waitEmpty', wait.map(function (i) { return '<tr>' + rowCommon(i) + '<td><span class="pill warn">' + (i.available_at ? fmtTs(i.available_at) + ' ' + t('after') : '') + '</span></td><td class="num"><button class="btn ghost sm" disabled>' + (i.action ? actionLabel(i.action.kind) : t('btn_withdraw')) + '</button></td></tr>'; }), 6, 'none_wait');
@@ -643,15 +682,195 @@
     } catch (ex) { log((ex && ex.code === 4001) ? t('rejected') : (t('err') + ': ' + (ex.message || ex)), 'bad'); btn.disabled = false; }
   }
 
-  window.__wrc = { runScan: runScan, classify: classify, decodePositions: decodePositions, parseDelayedRedeems: parseDelayedRedeems, buildClWithdraw: buildClWithdraw, buildLpBurn: buildLpBurn, buildRouterRemove: buildRouterRemove, buildSteps: buildSteps, CHAINS: CHAINS, setKey: function (k) { ETH_KEY = k || ''; } };
+  // ============================================================ consolidate (LI.FI quotes; the wallet signs each step)
+  var LIFI = 'https://li.quest/v1', LIFI_OK = { ethereum: 1, base: 1, arbitrum: 1, optimism: 1, polygon: 1, zksync: 1, linea: 1, scroll: 1, mode: 1, soneium: 1, lisk: 1, celo: 1, ink: 1, metis: 1, gnosis: 1, immutable: 1, unichain: 1, bsc: 1, avalanche: 1, hyperevm: 1, opbnb: 1, blast: 1, mantle: 1, bob: 1, sonic: 1, sei: 1, abstract: 1, fraxtal: 1, 'arbitrum-nova': 1 };
+  var NATIVE0 = '0x0000000000000000000000000000000000000000', CONS = { rows: [] }, usdcCache = {};
+  function errMsg(e) { return String((e && e.message) || e || '').slice(0, 140); }
+  function consInit() { $('consChain').innerHTML = CHAINS.filter(function (c) { return LIFI_OK[c.key]; }).map(function (c) { return '<option value="' + c.key + '"' + (c.key === 'base' ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join(''); }
+  async function lifiJson(path) { var r = await fetch(LIFI + path, { headers: { accept: 'application/json' }, signal: withTimeout(25000) }); var j = await r.json(); if (!r.ok) throw new Error((j && j.message) || ('HTTP ' + r.status)); return j; }
+  async function destToken(chain, kind) { if (kind === 'native') return { address: NATIVE0, decimals: 18, symbol: chain.sym }; if (!usdcCache[chain.key]) { var j = await lifiJson('/token?chain=' + chain.id + '&token=USDC'); usdcCache[chain.key] = { address: j.address, decimals: Number(j.decimals), symbol: j.symbol }; } return usdcCache[chain.key]; }
+  function lifiQuote(fromChain, toChain, fromToken, toToken, amountWei, from) { return lifiJson('/quote?fromChain=' + fromChain.id + '&toChain=' + toChain.id + '&fromToken=' + fromToken + '&toToken=' + toToken + '&fromAddress=' + from + '&fromAmount=' + amountWei.toString() + '&slippage=0.01'); }
+  function gasCostWei(q) { var s = 0n; ((q.estimate && q.estimate.gasCosts) || []).forEach(function (g) { try { s += BigInt(g.amount || 0); } catch (e) { /* skip */ } }); return s; }
+  function sumUsd(list) { var s = 0; (list || []).forEach(function (x) { s += Number(x.amountUSD || 0); }); return s; }
+  async function consPlan() {
+    if (!STATE || STATE.status !== 'done') { log(t('cons_empty'), 'warn'); return; }
+    var dest = CHAIN[$('consChain').value], kind = $('consToken').value, minUsd = Number($('consMin').value) || 2, addr = STATE.address;
+    $('btnConsPlan').disabled = true; $('btnConsAll').disabled = true; CONS.rows = []; renderCons(); log(t('cons_quoting') + '…');
+    var toTok; try { toTok = await destToken(dest, kind); } catch (e) { log(t('err') + ': ' + errMsg(e), 'bad'); $('btnConsPlan').disabled = false; return; }
+    var sources = [];
+    STATE.natives.forEach(function (n) { if (n.chain !== dest.key && LIFI_OK[n.chain] && n.usd != null && n.usd >= minUsd && n.raw) sources.push({ chain: CHAIN[n.chain], sym: n.sym, token: NATIVE0, dec: 18, raw: BigInt(n.raw), usd: n.usd, native: true }); });
+    STATE.items.forEach(function (i) { if (i.status === 'token' && i.chain !== dest.key && LIFI_OK[i.chain] && i.usd != null && i.usd >= minUsd && i.token && i.raw) sources.push({ chain: CHAIN[i.chain], sym: i.label.split(' · ')[0], token: i.token, dec: i.dec, raw: BigInt(i.raw), usd: i.usd, native: false }); });
+    if (!sources.length) { log(t('cons_none'), 'warn'); $('btnConsPlan').disabled = false; return; }
+    var nativeOf = {}; STATE.natives.forEach(function (n) { nativeOf[n.chain] = n; });
+    for (var i = 0; i < sources.length; i++) {
+      var s = sources[i], row = { src: s, status: 'quoting' }; CONS.rows.push(row); renderCons();
+      try {
+        var amount = s.raw;
+        if (s.native) { var q0 = await lifiQuote(s.chain, dest, s.token, toTok.address, amount * 9n / 10n, addr), reserve = gasCostWei(q0) * 2n; amount = s.raw > reserve ? s.raw - reserve : 0n; if (amount <= 0n) throw new Error(t('cons_nogas')); }
+        else { var nat = nativeOf[s.chain.key]; if (!nat || !nat.raw || BigInt(nat.raw) === 0n) throw new Error(t('cons_nogas')); }
+        var q = await lifiQuote(s.chain, dest, s.token, toTok.address, amount, addr), est = q.estimate || {}, tr = q.transactionRequest || {};
+        if (!tr.to || !tr.data) throw new Error(t('cons_noroute'));
+        row.amount = amount; row.fromUsd = Number(est.fromAmountUSD || s.usd); row.toUsd = Number(est.toAmountUSD || 0); row.toAmount = Number(est.toAmount || 0) / Math.pow(10, toTok.decimals); row.toSym = toTok.symbol; row.cost = sumUsd(est.gasCosts) + sumUsd(est.feeCosts); row.tool = (q.toolDetails && q.toolDetails.name) || q.tool || '?'; row.approval = (!s.native && est.approvalAddress) ? { spender: est.approvalAddress } : null; row.status = 'ready';
+      } catch (e) { row.status = 'skip'; row.err = errMsg(e); }
+      renderCons();
+    }
+    var ready = CONS.rows.filter(function (r) { return r.status === 'ready'; }), tot = 0, to = 0; ready.forEach(function (r) { tot += r.fromUsd; to += r.toUsd; });
+    log(t('cons_plan_done', { n: ready.length, usd: usd(tot), to: usd(to) }), 'ok'); $('btnConsPlan').disabled = false; $('btnConsAll').disabled = !ready.length;
+  }
+  function renderCons() {
+    var rows = CONS.rows; $('cntCons').textContent = rows.filter(function (r) { return r.status === 'ready'; }).length;
+    if (!rows.length) { $('consBody').innerHTML = ''; $('consEmpty').style.display = ''; return; }
+    $('consEmpty').style.display = 'none';
+    $('consBody').innerHTML = rows.map(function (r, i) { var s = r.src, amt = fmtAmt(r.amount != null ? r.amount : s.raw, s.dec) + ' ' + s.sym, recv = r.toAmount != null ? fnum(r.toAmount, 6) + ' ' + r.toSym + ' (' + usd(r.toUsd) + ')' : '', cost = r.cost != null ? usd(r.cost) + ' · ' + t('cons_net') + ' ' + (r.fromUsd ? Math.round(100 * r.toUsd / r.fromUsd) : 0) + '%' : '', route = r.status === 'quoting' ? t('cons_quoting') + '…' : r.status === 'skip' ? '<span class="bad">' + esc(r.err) + '</span>' : esc(r.tool) + (r.approval ? ' · ' + t('cons_approve') : ''), btn = r.status === 'ready' ? '<button class="btn primary sm" data-cons="' + i + '">' + t('cons_send') + '</button>' : r.status === 'sent' ? '<span class="pill warn">' + t('cons_sent') + '</span>' : ''; return '<tr><td>' + chainCell(s.chain.key, s.chain.name) + '</td><td>' + esc(s.sym) + '</td><td class="num">' + esc(amt) + '</td><td class="num">' + esc(recv) + '</td><td class="num">' + esc(cost) + '</td><td class="note">' + route + '</td><td class="num">' + btn + '</td></tr>'; }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-cons]'), function (b) { b.addEventListener('click', function () { consSend(Number(b.getAttribute('data-cons'))); }); });
+  }
+  async function consSend(i) {
+    var row = CONS.rows[i]; if (!row || row.status !== 'ready') return; var s = row.src, e = currentProvider(); if (!e) { log(t('no_wallet'), 'bad'); return; }
+    if (!ADDR) await connect(); if (!ADDR || ADDR.toLowerCase() !== STATE.address) { log(t('wrong_wallet'), 'bad'); return; }
+    row.status = 'sending'; renderCons();
+    try {
+      await ensureChain(s.chain);
+      if (row.approval) { var cur = 0n; try { cur = BigInt(await call(s.chain, s.token, SEL.allowance + wa(ADDR) + wa(row.approval.spender))); } catch (x) { cur = 0n; } if (cur < row.amount) { var ap = { to: s.token, data: SEL.approve + wa(row.approval.spender) + w(row.amount), value: '0x0' }, pf0 = await preflight(s.chain, ap, ADDR); if (!pf0.ok) throw new Error(pf0.reason); log(t('cons_approve') + ' · ' + s.chain.name + ' · ' + t('approve')); var p0 = { from: ADDR, to: ap.to, data: ap.data, value: '0x0' }; if (pf0.gas) p0.gas = pf0.gas; var h0 = await e.request({ method: 'eth_sendTransaction', params: [p0] }); var rc0 = await waitReceipt(s.chain, h0); if (!rc0 || rc0.status !== '0x1') throw new Error(t('reverted')); } }
+      var dest = CHAIN[$('consChain').value], toTok = await destToken(dest, $('consToken').value), q = await lifiQuote(s.chain, dest, s.token, toTok.address, row.amount, ADDR), tr = q.transactionRequest;
+      var step = { to: tr.to, data: tr.data, value: tr.value || '0x0' }, pf = await preflight(s.chain, step, ADDR); if (!pf.ok) throw new Error(pf.reason);
+      log(((q.toolDetails && q.toolDetails.name) || q.tool || 'bridge') + ' · ' + s.chain.name + ' → ' + dest.name + ' · ' + t('approve'));
+      var p1 = { from: ADDR, to: step.to, data: step.data, value: step.value }, gas = tr.gasLimit ? '0x' + (BigInt(tr.gasLimit) * 12n / 10n).toString(16) : pf.gas; if (gas) p1.gas = gas;
+      var hash = await e.request({ method: 'eth_sendTransaction', params: [p1] });
+      log(t('sent') + ' · ' + s.chain.explorer + '/tx/' + hash + ' · https://scan.li.fi/tx/' + hash, 'ok');
+      var rc = await waitReceipt(s.chain, hash); if (rc && rc.status !== '0x1') throw new Error(t('reverted')); if (!rc) log(t('no_receipt'), 'warn');
+      row.status = 'sent'; log(t('cons_sent'), 'ok');
+    } catch (ex) { row.status = 'ready'; log((ex && ex.code === 4001) ? t('rejected') : (t('err') + ': ' + errMsg(ex)), 'bad'); }
+    renderCons();
+  }
+  async function consSendAll() { for (var i = 0; i < CONS.rows.length; i++) if (CONS.rows[i].status === 'ready') await consSend(i); }
+
+  // ============================================================ Starknet (JediSwap v2 positions + STRK staking)
+  var SN = { rpc: 'https://api.zan.top/public/starknet-mainnet', npm: '0x0469b656239972a2501f2f1cd71bf4e844d64b7cae6773aa84c702327c476e5b', staking: '0x00ca1702e64c81d9a07b86bd2c540188d92a2c73cf5cc0e508d949015e7e84a7',
+    sel: { balanceOf: '0x2e4263afad30923c891518314c3c95dbe830a16874e8abc5777a9a20b54c76e', balance_of: '0x35a73cd311a05d46deda634c5ee045db92f811b4e74bca4437fcb5302b7af33', transfer: '0x99cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9', newPool: '0xc16f5edfc0dda1210073a603182c40a4007ec41ac763cd7b52f734f51311c9', getPosition: '0x3b3d893679cec4ffbfdc6a8c56ac55b38ce6cc583d9341af90e623172da5570', ownerOf: '0x3552df12bdc6089cf963c40c4cf56fbfd4bd14680c244d1c5494c2790f1ea5c', member: '0xa0ec7d248e7cac7ad635c76ae431955a3ded9d7d9da3f80ee03c5c2383d9bf', params: '0x1bbe983762bed00ab1fb31234611c56f8561e3cdcc963d7b5eb3875517a7435', decrease: '0x3bc75403f0d735653dce6c92437af5f88d5a4b49c6ef582454a66d3a033d429', collect: '0x284134db6f39215e1d0a0a3dbd382fd7d28af6b3e3d5b77bba35c3a1d0da316', claim: '0x89c7b1cc4866e9e58d867cb66844bcc9c17cfdabb8ab640b05d2bc53efc556', intent: '0x3a8373903fa7946f74e89e626260495125e0bc54dcb43e90c895f69f69b00af', action: '0x1a1e389f01dfd06ed80e78e8bd82085fa725e99292dd3507d80bbfd8c889efa' },
+    tokens: { '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7': ['ETH', 18, 'ethereum'], '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d': ['STRK', 18, 'starknet'], '0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8': ['USDC', 6, 'usd-coin'], '0x042b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2': ['wstETH', 18, 'wrapped-steth'], '0x068f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8': ['USDT', 6, 'tether'], '0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac': ['WBTC', 8, 'bitcoin'] } };
+  var SN_STATE = { address: null, items: [], natives: [], status: 'idle' }, SN_WALLET = null, SN_ADDR = null, snLimit = limiter(8);
+  function snHex(v) { return '0x' + BigInt(v).toString(16); }
+  function snPad(a) { return '0x' + a.replace(/^0x/, '').toLowerCase().padStart(64, '0'); }
+  async function snRpc(method, params) { var r = await fetch(SN.rpc, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params }), signal: withTimeout(40000) }); var j = await r.json(); if (j.error) throw new Error(String(j.error.message || JSON.stringify(j.error)).slice(0, 160)); return j.result; }
+  function snCall(to, selector, calldata) { return snLimit(function () { return snRpc('starknet_call', [{ contract_address: to, entry_point_selector: selector, calldata: calldata }, 'latest']); }); }
+  function snU256(r) { return BigInt(r[0]) + (BigInt(r[1] || 0) << 128n); }
+  async function snEvents(address, keys, fromBlock, onPage) { var cont = null, out = []; for (var i = 0; i < 500; i++) { var flt = { address: address, keys: keys, from_block: { block_number: fromBlock }, to_block: 'latest', chunk_size: 1000 }; if (cont) flt.continuation_token = cont; var res = await snRpc('starknet_getEvents', [flt]); out = out.concat(res.events || []); cont = res.continuation_token; if (onPage) onPage(i + 1); if (!cont) break; } return out; }
+  function snSetStatus(msg) { $('snStatus').textContent = msg; }
+  async function snPools(onPage) {
+    var cache = null; try { cache = JSON.parse(localStorage.getItem('wrc_sn_pools') || 'null'); } catch (e) { cache = null; }
+    var from = cache ? cache.block + 1 : 0, pools = cache ? cache.pools : [], latest = Number(await snRpc('starknet_blockNumber', []));
+    if (from <= latest) { var evs = await snEvents(SN.staking, [[SN.sel.newPool]], from, onPage); evs.forEach(function (ev) { pools.push([ev.keys[1], ev.keys[2]]); }); try { localStorage.setItem('wrc_sn_pools', JSON.stringify({ block: latest, pools: pools })); } catch (e) { /* none */ } }
+    return pools;
+  }
+  async function snSimulate(address, calls) {
+    var cd = [snHex(calls.length)]; calls.forEach(function (c) { cd.push(c.to, c.sel, snHex(c.args.length)); cd = cd.concat(c.args); });
+    var nonce = await snRpc('starknet_getNonce', ['latest', address]);
+    var tx = { type: 'INVOKE', version: '0x3', sender_address: address, calldata: cd, signature: [], nonce: nonce, resource_bounds: { l1_gas: { max_amount: '0x1000', max_price_per_unit: '0x1000000000000' }, l2_gas: { max_amount: '0x10000000', max_price_per_unit: '0x100000000000' }, l1_data_gas: { max_amount: '0x1000', max_price_per_unit: '0x100000000000' } }, tip: '0x0', paymaster_data: [], account_deployment_data: [], nonce_data_availability_mode: 'L1', fee_data_availability_mode: 'L1' };
+    var sim = (await snRpc('starknet_simulateTransactions', ['latest', [tx], ['SKIP_VALIDATE', 'SKIP_FEE_CHARGE']]))[0], ex = sim.transaction_trace.execute_invocation || {};
+    if (ex.revert_reason) throw new Error(String(ex.revert_reason).slice(0, 160));
+    var got = {}, me = BigInt(address);
+    (function walk(c) { (c.events || []).forEach(function (ev) { var k = ev.keys || [], d = ev.data || []; if (k.length >= 3 && BigInt(k[0]) === BigInt(SN.sel.transfer) && BigInt(k[2]) === me) { var tok = snHex(BigInt(c.contract_address)); got[tok] = (got[tok] || 0n) + BigInt(d[0]); } }); (c.calls || []).forEach(walk); })(ex);
+    return { got: got, fee: BigInt(sim.fee_estimation.overall_fee) };
+  }
+  function snTok(addr) { var k = Object.keys(SN.tokens).filter(function (a) { return BigInt(a) === BigInt(addr); })[0]; return k ? { sym: SN.tokens[k][0], dec: SN.tokens[k][1], cg: SN.tokens[k][2] } : { sym: String(addr).slice(0, 8), dec: 18, cg: null }; }
+  function snFmt(got, prices) { var parts = [], usdSum = 0, any = false; Object.keys(got).forEach(function (a) { var m = snTok(a), v = Number(got[a]) / Math.pow(10, m.dec); parts.push(fnum(v, 4) + ' ' + m.sym); if (m.cg && prices[m.cg] != null) { usdSum += v * prices[m.cg]; any = true; } }); return { text: parts.join(' + '), usd: any ? usdSum : null }; }
+  async function snScan(address) {
+    var st = { address: address, items: [], natives: [], status: 'running' }; SN_STATE = st; renderSn();
+    var prices = await nativePrices(new Set(['ethereum', 'starknet', 'usd-coin', 'wrapped-steth', 'tether', 'bitcoin']));
+    snSetStatus(t('scanning') + ' · ' + t('sn_step_bal'));
+    for (var a in SN.tokens) { try { var b = snU256(await snCall(a, SN.sel.balanceOf, [address])); if (b > 0n) { var m = SN.tokens[a], v = Number(b) / Math.pow(10, m[1]); st.natives.push({ sym: m[0], amount: v, usd: prices[m[2]] != null ? v * prices[m[2]] : null }); } } catch (e) { /* token unreadable */ } }
+    renderSn();
+    try {
+      var cnt = snU256(await snCall(SN.npm, SN.sel.balance_of, [address]));
+      if (cnt > 0n) {
+        var seen = {}, ids = [], evs = await snEvents(SN.npm, [[SN.sel.transfer], [], [snPad(address)]], 0, function (p) { snSetStatus(t('scanning') + ' · ' + t('sn_step_pos') + ' · ' + p); });
+        evs.forEach(function (ev) { var id = ev.keys.length >= 4 ? BigInt(ev.keys[3]) : BigInt(ev.data[0]); if (!seen[id]) { seen[id] = 1; ids.push(id); } });
+        for (var i = 0; i < ids.length; i++) {
+          var tid = ids[i];
+          try {
+            var own = await snCall(SN.npm, SN.sel.ownerOf, [snHex(tid), '0x0']); if (BigInt(own[0]) !== BigInt(address)) continue;
+            var p = await snCall(SN.npm, SN.sel.getPosition, [snHex(tid), '0x0']), liq = BigInt(p[6]); if (liq === 0n) continue;
+            var m0 = snTok(p[13]), m1 = snTok(p[14]), dl = Math.floor(Date.now() / 1000) + 3600, M = (1n << 128n) - 1n, amount = null, usdv = null, note;
+            try { var sim = await snSimulate(address, [{ to: SN.npm, sel: SN.sel.decrease, args: [snHex(tid), '0x0', snHex(liq), '0x0', '0x0', '0x0', '0x0', snHex(dl)] }, { to: SN.npm, sel: SN.sel.collect, args: [snHex(tid), '0x0', address, snHex(M), snHex(M)] }]), f = snFmt(sim.got, prices); amount = f.text; usdv = f.usd; note = t('sn_pos_note'); } catch (e) { note = t('sn_pos_note2'); }
+            st.items.push({ kind: 'sn_lp', status: 'ready', label: t('sn_pos') + ' #' + tid + ' · ' + m0.sym + '/' + m1.sym, amount: amount || ('liquidity ' + liq.toString()), usd: usdv, note: note, explorer: 'https://voyager.online/nft/' + SN.npm + '/' + tid, action: { kind: 'sn_lp', tokenId: tid.toString(), liquidity: liq.toString() } }); renderSn();
+          } catch (e) { /* skip id */ }
+        }
+      }
+    } catch (e) { log('Starknet JediSwap: ' + errMsg(e), 'warn'); }
+    try {
+      snSetStatus(t('scanning') + ' · ' + t('sn_step_pools'));
+      var pools = await snPools(function (p) { snSetStatus(t('scanning') + ' · ' + t('sn_step_pools') + ' · ' + p); }), params = await snCall(SN.staking, SN.sel.params, []), exitWindow = Number(BigInt(params[params.length - 1])), done = 0;
+      await Promise.all(pools.map(async function (pr) {
+        var pool = pr[1];
+        try {
+          var r = await snCall(pool, SN.sel.member, [address]); done++; if (done % 50 === 0) snSetStatus(t('scanning') + ' · ' + t('sn_step_members') + ' · ' + done + '/' + pools.length);
+          if (r[0] !== '0x0') return;
+          var amount = BigInt(r[2]), unclaimed = BigInt(r[3]), unpool = BigInt(r[5]), unpoolTime = r[6] === '0x0' ? Number(BigInt(r[7])) : null, now = Math.floor(Date.now() / 1000), pv = prices.starknet, lbl = t('sn_stake') + ' · ' + pool.slice(0, 8) + '…' + pool.slice(-4);
+          if (amount === 0n && unpool === 0n && unclaimed === 0n) return;
+          if (amount > 0n) st.items.push({ kind: 'sn_stake', status: 'ready', label: lbl, amount: fnum(Number(amount) / 1e18, 4) + ' STRK + ' + fnum(Number(unclaimed) / 1e18, 4) + ' ' + t('sn_stake_reward'), usd: pv != null ? Number(amount + unclaimed) / 1e18 * pv : null, note: t('sn_stake_note', { d: Math.round(exitWindow / 86400) }), explorer: 'https://voyager.online/contract/' + pool, action: { kind: 'sn_stake_intent', pool: pool, amount: amount.toString(), unclaimed: unclaimed.toString() } });
+          if (unpool > 0n) { var ready = unpoolTime !== null && now >= unpoolTime; st.items.push({ kind: 'sn_stake', status: ready ? 'ready' : 'waiting', available_at: unpoolTime, label: lbl, amount: fnum(Number(unpool) / 1e18, 4) + ' STRK', usd: pv != null ? Number(unpool) / 1e18 * pv : null, note: ready ? t('sn_stake_action') : t('sn_stake_wait', { when: unpoolTime ? fmtTs(unpoolTime) : '?' }), explorer: 'https://voyager.online/contract/' + pool, action: { kind: 'sn_stake_action', pool: pool, unclaimed: unclaimed.toString() } }); }
+          renderSn();
+        } catch (e) { done++; }
+      }));
+    } catch (e) { log('Starknet staking: ' + errMsg(e), 'warn'); }
+    st.status = 'done'; snSetStatus(t('sn_done') + ' · ' + st.items.length + ' ' + t('findings')); renderSn(); return st;
+  }
+  function renderSn() {
+    var st = SN_STATE, rows = st.items.map(function (i, idx) { var btn = i.status === 'ready' ? '<button class="btn primary sm" data-sn="' + idx + '">' + (i.action.kind === 'sn_stake_intent' ? t('btn_sn_exit') : i.action.kind === 'sn_stake_action' ? t('btn_sn_action') : t('btn_withdraw')) + '</button>' : (i.status === 'waiting' ? '<span class="pill warn">' + (i.available_at ? fmtTs(i.available_at) + ' ' + t('after') : '') + '</span>' : ''); return '<tr><td>' + esc(i.label) + (i.explorer ? ' <a class="go" target="_blank" rel="noopener" href="' + esc(i.explorer) + '">' + t('btn_go') + ' <span>↗</span></a>' : '') + '</td><td class="num">' + esc(i.amount) + '</td><td class="num">' + usd(i.usd) + '</td><td class="note">' + esc(i.note) + '</td><td class="num">' + btn + '</td></tr>'; });
+    var nat = st.natives.map(function (n) { return '<tr><td>' + esc(n.sym) + '</td><td class="num">' + fnum(n.amount, 6) + ' ' + esc(n.sym) + '</td><td class="num">' + usd(n.usd) + '</td><td class="note">' + t('note_token') + '</td><td></td></tr>'; });
+    $('cntSn').textContent = st.items.length; $('snBody').innerHTML = rows.concat(nat).join('');
+    $('snEmpty').style.display = rows.length || nat.length ? 'none' : ''; $('snEmpty').textContent = st.status === 'done' ? t('sn_none') : '';
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-sn]'), function (b) { b.addEventListener('click', function () { snExecute(Number(b.getAttribute('data-sn')), b); }); });
+  }
+  function snWallets() { var out = [], names = ['starknet_braavos', 'starknet_argentX', 'starknet_ready', 'starknet']; names.forEach(function (n) { var w = window[n]; if (w && (typeof w.request === 'function' || typeof w.enable === 'function')) out.push({ name: n, w: w }); }); Object.keys(window).forEach(function (k) { if (k.indexOf('starknet') === 0 && names.indexOf(k) < 0) { var w = window[k]; if (w && (typeof w.request === 'function' || typeof w.enable === 'function')) out.push({ name: k, w: w }); } }); return out; }
+  function snRejected(e) { return (e && e.code === 113) || /reject|refus|abort|cancel|denied|declin/i.test(String((e && e.message) || e || '')); }
+  async function snConnect() {
+    var ws = snWallets(); if (!ws.length) { log(t('sn_no_wallet'), 'bad'); return; }
+    var W = ws[0].w, addr = null;
+    if (typeof W.request === 'function') { try { var r = await W.request({ type: 'wallet_requestAccounts', params: { silent_mode: false } }); addr = Array.isArray(r) ? r[0] : r; } catch (e) { if (snRejected(e)) { log(t('rejected'), 'bad'); return; } } }
+    if (!addr && typeof W.enable === 'function') { try { var r2 = await W.enable(); addr = Array.isArray(r2) ? r2[0] : (W.selectedAddress || (W.account && W.account.address)); } catch (e2) { log(t('err') + ': ' + errMsg(e2), 'bad'); return; } }
+    if (!addr) { log(t('err') + ': no account', 'bad'); return; }
+    SN_WALLET = W; SN_ADDR = addr; var ok = SN_STATE.address && BigInt(addr) === BigInt(SN_STATE.address);
+    $('snWalletInfo').textContent = addr.slice(0, 6) + '…' + addr.slice(-4) + ' ' + (ok ? t('scanned_addr') : t('different')); $('snWalletInfo').style.color = ok ? 'var(--ok)' : 'var(--bad)'; log(t('connected') + ' · Starknet · ' + addr, 'ok');
+  }
+  async function snSend(calls) {
+    var W = SN_WALLET, hash = null;
+    if (typeof W.request === 'function') { try { var res = await W.request({ type: 'wallet_addInvokeTransaction', params: { calls: calls.map(function (c) { return { contract_address: c.contractAddress, entry_point: c.entrypoint, calldata: c.calldata }; }) } }); hash = (res && res.transaction_hash) || res; } catch (e) { if (snRejected(e)) throw e; } }
+    if (!hash && W.account && typeof W.account.execute === 'function') { var res2 = await W.account.execute(calls); hash = res2 && res2.transaction_hash; }
+    if (!hash) throw new Error('wallet cannot send'); return String(hash);
+  }
+  async function snExecute(idx, btn) {
+    var it = SN_STATE.items[idx]; if (!it) return; if (!SN_WALLET) await snConnect(); if (!SN_ADDR || BigInt(SN_ADDR) !== BigInt(SN_STATE.address)) { log(t('wrong_wallet'), 'bad'); return; }
+    var a = it.action, addr = SN_STATE.address, calls = [], M = (1n << 128n) - 1n, selOf = { decrease_liquidity: SN.sel.decrease, collect: SN.sel.collect, claim_rewards: SN.sel.claim, exit_delegation_pool_intent: SN.sel.intent, exit_delegation_pool_action: SN.sel.action };
+    if (a.kind === 'sn_lp') { var dl = Math.floor(Date.now() / 1000) + 3600; calls = [{ contractAddress: SN.npm, entrypoint: 'decrease_liquidity', calldata: [snHex(a.tokenId), '0x0', snHex(a.liquidity), '0x0', '0x0', '0x0', '0x0', snHex(dl)] }, { contractAddress: SN.npm, entrypoint: 'collect', calldata: [snHex(a.tokenId), '0x0', addr, snHex(M), snHex(M)] }]; }
+    else if (a.kind === 'sn_stake_intent') { if (BigInt(a.unclaimed) > 0n) calls.push({ contractAddress: a.pool, entrypoint: 'claim_rewards', calldata: [addr] }); calls.push({ contractAddress: a.pool, entrypoint: 'exit_delegation_pool_intent', calldata: [snHex(a.amount)] }); }
+    else if (a.kind === 'sn_stake_action') { if (BigInt(a.unclaimed) > 0n) calls.push({ contractAddress: a.pool, entrypoint: 'claim_rewards', calldata: [addr] }); calls.push({ contractAddress: a.pool, entrypoint: 'exit_delegation_pool_action', calldata: [addr] }); }
+    btn.disabled = true;
+    try {
+      try { await snSimulate(addr, calls.map(function (c) { return { to: c.contractAddress, sel: selOf[c.entrypoint], args: c.calldata }; })); } catch (e) { log(t('preflight_fail', { reason: errMsg(e) }), 'bad'); btn.disabled = false; return; }
+      log('Starknet · ' + calls.length + ' calls · ' + t('approve'));
+      var hash = await snSend(calls); log(t('sent') + ' · https://voyager.online/tx/' + hash, 'ok');
+      var started = Date.now(); while (Date.now() - started < 300000) { await sleep(8000); try { var rc = await snRpc('starknet_getTransactionReceipt', [hash]); if (rc.execution_status === 'REVERTED') { log(t('reverted'), 'bad'); btn.disabled = false; return; } if (/ACCEPTED/.test(rc.finality_status || '')) { log(t('confirmed') + ' ' + (rc.block_number || ''), 'ok'); break; } } catch (e) { /* not yet */ } }
+      log(t('rescan'), 'ok'); setTimeout(function () { snScan(SN_STATE.address); }, 10000);
+    } catch (ex) { log(snRejected(ex) ? t('rejected') : (t('err') + ': ' + errMsg(ex)), 'bad'); btn.disabled = false; }
+  }
+
+  window.__wrc = { runScan: runScan, snScan: snScan, consPlan: consPlan, classify: classify, decodePositions: decodePositions, parseDelayedRedeems: parseDelayedRedeems, buildClWithdraw: buildClWithdraw, buildLpBurn: buildLpBurn, buildRouterRemove: buildRouterRemove, buildSteps: buildSteps, CHAINS: CHAINS, setKey: function (k) { ETH_KEY = k || ''; }, setState: function (s) { STATE = s; }, cons: CONS, i18n: I18N, srcEtherscan: srcEtherscan };
+  consInit();
+  $('btnConsPlan').addEventListener('click', consPlan);
+  $('btnConsAll').addEventListener('click', consSendAll);
+  $('btnSnScan').addEventListener('click', function () { var a = $('snAddr').value.trim().toLowerCase(); if (!/^0x[0-9a-f]{50,64}$/.test(a)) { log(t('sn_bad_addr'), 'bad'); return; } try { localStorage.setItem('wrc_sn_addr', a); } catch (e) { /* none */ } $('btnSnScan').disabled = true; snScan(a).catch(function (e) { log(t('err') + ': ' + errMsg(e), 'bad'); }).finally(function () { $('btnSnScan').disabled = false; }); });
+  $('btnSnConnect').addEventListener('click', snConnect);
+  $('snAddr').addEventListener('input', function () { $('snIdent').innerHTML = identicon($('snAddr').value.trim()); });
+  try { var savedSn = localStorage.getItem('wrc_sn_addr'); if (savedSn) { $('snAddr').value = savedSn; $('snIdent').innerHTML = identicon(savedSn); } } catch (e) { /* none */ }
   $('btnScan').addEventListener('click', startScan);
   $('btnStop').addEventListener('click', function () { STOP = true; });
   $('btnConnect').addEventListener('click', connect);
-  $('btnKeySave').addEventListener('click', function () { ETH_KEY = $('ethKey').value.trim(); try { if (ETH_KEY) localStorage.setItem('wrc_eskey', ETH_KEY); else localStorage.removeItem('wrc_eskey'); } catch (e) { /* none */ } log(ETH_KEY ? t('key_saved') : t('key_cleared'), 'ok'); });
+  $('btnKeySave').addEventListener('click', function () { USER_ETH_KEY = $('ethKey').value.trim(); ETH_KEY = USER_ETH_KEY || DEFAULT_ETH_KEY; ES_LIMITED = false; try { if (USER_ETH_KEY) localStorage.setItem('wrc_eskey', USER_ETH_KEY); else localStorage.removeItem('wrc_eskey'); } catch (e) { /* none */ } log(USER_ETH_KEY ? t('key_saved') : t('key_cleared'), 'ok'); });
   $('langTr').addEventListener('click', function () { LANG = 'tr'; try { localStorage.setItem('wrc_lang', 'tr'); } catch (e) { /* none */ } applyLang(); });
   $('langEn').addEventListener('click', function () { LANG = 'en'; try { localStorage.setItem('wrc_lang', 'en'); } catch (e) { /* none */ } applyLang(); });
   $('addr').addEventListener('input', function () { $('ident').innerHTML = identicon(addrInput()); });
-  try { var saved = localStorage.getItem('wrc_addr'); if (saved) $('addr').value = saved; if (ETH_KEY) { $('ethKey').value = ETH_KEY; $('keyBox').open = true; } } catch (e) { /* none */ }
+  try { var saved = localStorage.getItem('wrc_addr'); if (saved) $('addr').value = saved; if (USER_ETH_KEY) { $('ethKey').value = USER_ETH_KEY; $('keyBox').open = true; } } catch (e) { /* none */ }
   var qs = new URLSearchParams(location.search); if (/^0x[0-9a-fA-F]{40}$/.test(qs.get('address') || '')) $('addr').value = qs.get('address').toLowerCase();
   $('ident').innerHTML = identicon(addrInput());
   applyLang();
