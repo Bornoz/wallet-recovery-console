@@ -10,6 +10,8 @@ Sunucusuz · anahtarsız · tek dosya · MIT
 [![License: MIT](https://img.shields.io/badge/license-MIT-2b3040?style=flat-square)](LICENSE)
 [![Chains](https://img.shields.io/badge/chains-37%20EVM%20%2B%20Starknet%20%2B%20Solana-3ddc97?style=flat-square)](#coverage)
 [![No backend](https://img.shields.io/badge/backend-none-6ea8fe?style=flat-square)](#security-model)
+[![Views](https://hits.sh/bornoz.github.io/wallet-recovery-console.svg?label=views&color=2b3040&style=flat-square)](https://hits.sh/bornoz.github.io/wallet-recovery-console/)
+[![Scans](https://hits.sh/bornoz.github.io/wallet-recovery-console/scan.svg?label=scans&color=e4b04a&style=flat-square)](https://hits.sh/bornoz.github.io/wallet-recovery-console/scan/)
 
 </div>
 
@@ -70,6 +72,7 @@ The coverage matrix on the page shows, per chain, which source answered and whet
 
 - No private keys, seed phrases or signatures are ever requested. The page builds unsigned transactions (`to / data / value`) and hands them to the wallet through EIP-1193; the wallet signs.
 - No backend, no database, no analytics. Requests go directly from the browser to public RPCs, Blockscout, Routescan, BTRScan, Etherscan, DefiLlama, LI.FI, Wormholescan, LayerZero Scan and Across.
+- Usage is counted through [hits.sh](https://hits.sh): one hit per page view and one per scan. Only the page path reaches the counter, never an address or a result; the totals are public on the badge pages linked above.
 - Solana transactions are built without any library (a legacy message with `closeAccount` instructions) and handed to the wallet through the Wallet Standard; the serializer is checked byte for byte against `@solana/web3.js` in development.
 - Token prices are looked up by contract address, never by symbol. A token merely named "USDC" is not priced.
 - LP withdrawals via `transfer → burn` are limited to small positions (≤ $20) because two separate transactions can be front-run; larger positions are listed for router withdrawal.
