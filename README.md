@@ -26,6 +26,7 @@ Paste an address. The console scans 37 EVM networks for assets that wallets and 
 - **Lending deposits**: Aave-style aTokens and Compound-style cTokens.
 - **Delayed redemptions**: for example Bedrock uniBTC on Bitlayer, with the exact unlock time.
 - **Unredeemed bridge transfers**: Wormhole operations that never completed on the target chain.
+- **Unclaimed StarkEx withdrawals**: funds an exchange already released on Ethereum but nobody pulled out of its contract (tanX, Immutable X, Sorare, Myria, Reddio, dYdX v3, ApeX). Nothing in the wallet's history points to them, so each contract is asked with `getWithdrawalBalance`; the button calls `withdraw`, which pays the owner whoever sends it.
 - **Locks and escrows**: ve-NFT vote locks (unlock when expired), Camelot-style escrowed tokens (claim finished vestings, start a new one), GMX staked GLP. Other escrows link straight to the protocol UI.
 - **Starknet**: JediSwap v2 positions and STRK staking delegations (claim rewards, start the exit, complete it after the 7-day window), signed with Braavos or Ready X.
 - **Consolidate**: bridge balances from every chain into one asset on one chain (for example ETH on Base) with LI.FI quotes. A gas reserve stays on the source chain, approvals are handled, and every step is simulated first.
